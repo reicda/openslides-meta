@@ -18,7 +18,7 @@ DECIMAL_REGEX = re.compile(r"^-?(\d|[1-9]\d+)\.\d{6}$")
 COLOR_REGEX = re.compile(r"^#[0-9a-f]{6}$")
 
 DEFAULT_FILES = [
-    "../models.yml",
+    "global/meta/models.yml",
 ]
 
 RELATION_TYPES = (

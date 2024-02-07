@@ -293,9 +293,6 @@ user:
   email:
     type: string
     restriction_mode: E
-  default_number:
-    type: string
-    restriction_mode: A
   default_structure_level:
     type: string
     restriction_mode: A

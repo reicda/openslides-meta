@@ -7,5 +7,7 @@ WORKDIR /app/dev/
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+EXPOSE 5678
+
 STOPSIGNAL SIGKILL
 CMD sleep infinity

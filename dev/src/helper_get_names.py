@@ -1,18 +1,19 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
 KEYSEPARATOR = "/"
+
 
 class TableFieldType:
     def __init__(
         self,
         table: str,
         column: str,
-        field_def: Optional[Dict[str, Any]],
+        field_def: dict[str, Any] | None,
         ref_column: str = "id",
     ):
         self.table = table
         self.column = column
-        self.field_def: Dict[str, Any] = field_def or {}
+        self.field_def: dict[str, Any] = field_def or {}
         self.ref_column = ref_column
 
     @property
@@ -29,8 +30,11 @@ class HelperGetNames:
     def max_length(func) -> str:
         def wrapper(*args, **kwargs):
             name = func(*args, **kwargs)
-            assert len(name) <= HelperGetNames.MAX_LEN, f"Generated name '{name}' to long in function {func}!"
+            assert (
+                len(name) <= HelperGetNames.MAX_LEN
+            ), f"Generated name '{name}' to long in function {func}!"
             return name
+
         return wrapper
 
     @staticmethod
@@ -48,8 +52,10 @@ class HelperGetNames:
     @staticmethod
     @max_length
     def get_nm_table_name(own: TableFieldType, foreign: TableFieldType) -> str:
-        """ table name n:m-relations intermediate table"""
-        if (own_str := f"{own.table}_{own.column}") < (foreign_str := f"{foreign.table}_{foreign.column}"):
+        """table name n:m-relations intermediate table"""
+        if (own_str := f"{own.table}_{own.column}") < (
+            foreign_str := f"{foreign.table}_{foreign.column}"
+        ):
             return f"nm_{own_str}_{foreign.table}"
         else:
             return f"nm_{foreign_str}_{own.table}"
@@ -57,7 +63,5 @@ class HelperGetNames:
     @staticmethod
     @max_length
     def get_gm_table_name(table_field: TableFieldType) -> str:
-        """ table name generic-list:m-relations intermediate table"""
+        """table name generic-list:m-relations intermediate table"""
         return f"gm_{table_field.table}_{table_field.column}"
-
-

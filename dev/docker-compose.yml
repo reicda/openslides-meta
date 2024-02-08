@@ -3,6 +3,8 @@ services:
     models:
         build: .
         user: $USER_ID:$GROUP_ID
+        ports:
+            - 5678:5678
         volumes:
             - ..:/app
         depends_on:

@@ -2,7 +2,7 @@
 -- schema.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
 
--- MODELS_YML_CHECKSUM = 'faa2401887834e2fdfbb875185412256'
+-- MODELS_YML_CHECKSUM = 'c942b45a22fcdb3b4d25726f48a411dc'
 -- Type definitions
 DO $$
 BEGIN

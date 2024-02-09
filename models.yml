@@ -422,14 +422,14 @@ meeting_user:
     to: motion/supporter_meeting_user_ids
     equal_fields: meeting_id
     restriction_mode: A
-  editor_for_motion_ids:
+  motion_editor_ids:
     type: relation-list
-    to: motion/editor_id
+    to: motion_editor/meeting_user_id
     equal_fields: meeting_id
     restriction_mode: A
-  working_group_speaker_for_motion_ids:
+  motion_working_group_speaker_ids:
     type: relation-list
-    to: motion/working_group_speaker_id
+    to: motion_working_group_speaker/meeting_user_id
     equal_fields: meeting_id
     restriction_mode: A
   motion_submitter_ids:
@@ -1565,6 +1565,16 @@ meeting:
     to: motion_submitter/meeting_id
     on_delete: CASCADE
     restriction_mode: B
+  motion_editor_ids:
+    type: relation-list
+    to: motion_editor/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  motion_working_group_speaker_ids:
+    type: relation-list
+    to: motion_working_group_speaker/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
   motion_change_recommendation_ids:
     type: relation-list
     to: motion_change_recommendation/meeting_id
@@ -2446,14 +2456,14 @@ motion:
     to: meeting_user/supported_motion_ids
     equal_fields: meeting_id
     restriction_mode: C
-  editor_id:
-    type: relation
-    to: meeting_user/editor_for_motion_ids
+  editor_ids:
+    type: relation-list
+    to: motion_editor/motion_id
     equal_fields: meeting_id
     restriction_mode: B
-  working_group_speaker_id:
-    type: relation
-    to: meeting_user/working_group_speaker_for_motion_ids
+  working_group_speaker_ids:
+    type: relation-list
+    to: motion_working_group_speaker/motion_id
     equal_fields: meeting_id
     restriction_mode: B
   poll_ids:
@@ -2551,6 +2561,60 @@ motion_submitter:
   meeting_id:
     type: relation
     to: meeting/motion_submitter_ids
+    required: true
+    restriction_mode: A
+    constant: true
+
+motion_editor:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+  weight:
+    type: number
+    restriction_mode: A
+  meeting_user_id:
+    type: relation
+    to: meeting_user/motion_editor_ids
+    restriction_mode: A
+    required: true
+  motion_id:
+    type: relation
+    to: motion/editor_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+    required: true
+    constant: true
+  meeting_id:
+    type: relation
+    to: meeting/motion_editor_ids
+    required: true
+    restriction_mode: A
+    constant: true
+
+motion_working_group_speaker:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+  weight:
+    type: number
+    restriction_mode: A
+  meeting_user_id:
+    type: relation
+    to: meeting_user/motion_working_group_speaker_ids
+    restriction_mode: A
+    required: true
+  motion_id:
+    type: relation
+    to: motion/working_group_speaker_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+    required: true
+    constant: true
+  meeting_id:
+    type: relation
+    to: meeting/motion_working_group_speaker_ids
     required: true
     restriction_mode: A
     constant: true

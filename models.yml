@@ -1756,7 +1756,7 @@ meeting:
     required: true
   default_projector_current_list_of_speakers_ids:
     type: relation-list
-    to: projector/used_as_default_projector_for_current_list_of_speakers_in_meeting_id
+    to: projector/used_as_default_projector_for_current_los_in_meeting_id
     restriction_mode: B
     required: true
   default_projector_motion_ids:
@@ -3757,7 +3757,7 @@ projector:
     type: relation
     to: meeting/default_projector_list_of_speakers_ids
     restriction_mode: A
-  used_as_default_projector_for_current_list_of_speakers_in_meeting_id:
+  used_as_default_projector_for_current_los_in_meeting_id:
     type: relation
     to: meeting/default_projector_current_list_of_speakers_ids
     restriction_mode: A

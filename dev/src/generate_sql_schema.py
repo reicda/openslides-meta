@@ -582,8 +582,8 @@ class Helper:
                 ${own_table_name_with_ref_column} integer NOT NULL REFERENCES ${own_table_name}(${own_table_ref_column}),
                 ${own_table_column} varchar(100) NOT NULL,
             ${foreign_table_ref_lines}
-                CONSTRAINT valid_${own_table_column}_part1 CHECK (split_part(${own_table_column}, '/', 1) IN ${tuple_of_foreign_table_names}),
-                CONSTRAINT unique_${own_table_name_with_ref_column}_${own_table_column} UNIQUE (${own_table_name_with_ref_column}, ${own_table_column})
+                CONSTRAINT ${valid_constraint_name} CHECK (split_part(${own_table_column}, '/', 1) IN ${tuple_of_foreign_table_names}),
+                CONSTRAINT ${unique_constraint_name} UNIQUE (${own_table_name_with_ref_column}, ${own_table_column})
             );
         """
         )
@@ -800,11 +800,13 @@ class Helper:
             {
                 "table_name": HelperGetNames.get_table_name(gm_table_name),
                 "own_table_name": HelperGetNames.get_table_name(own_table_field.table),
-                "own_table_name_with_ref_column": f"{own_table_field.table}_{own_table_field.ref_column}",
+                "own_table_name_with_ref_column": (own_table_name_with_ref_column := f"{own_table_field.table}_{own_table_field.ref_column}"),
                 "own_table_ref_column": own_table_field.ref_column,
-                "own_table_column": own_table_field.column[:-1],
+                "own_table_column": own_table_column,
                 "tuple_of_foreign_table_names": joined_table_names,
                 "foreign_table_ref_lines": "\n".join(foreign_table_ref_lines),
+                "valid_constraint_name": HelperGetNames.get_generic_valid_constraint_name(own_table_column),
+                "unique_constraint_name": HelperGetNames.get_generic_unique_constraint_name(own_table_name_with_ref_column, own_table_column),
             }
         )
         return gm_table_name, text
@@ -1030,7 +1032,7 @@ class Helper:
 
     @staticmethod
     def get_generic_field_constraint(own_column: str, foreign_tables: list[str]) -> str:
-        constraint_name = HelperGetNames.get_generic_constraint_name(own_column)
+        constraint_name = HelperGetNames.get_generic_valid_constraint_name(own_column)
         return f"""    CONSTRAINT {constraint_name} CHECK (split_part({own_column}, '/', 1) IN ('{"','".join(foreign_tables)}')),\n"""
 
 

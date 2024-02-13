@@ -1347,7 +1347,7 @@ CREATE TABLE IF NOT EXISTS gm_organization_tag_tagged_idsT (
     tagged_id_committee_id integer GENERATED ALWAYS AS (CASE WHEN split_part(tagged_id, '/', 1) = 'committee' THEN cast(split_part(tagged_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES committeeT(id),
     tagged_id_meeting_id integer GENERATED ALWAYS AS (CASE WHEN split_part(tagged_id, '/', 1) = 'meeting' THEN cast(split_part(tagged_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES meetingT(id),
     CONSTRAINT valid_tagged_id_part1 CHECK (split_part(tagged_id, '/', 1) IN ('committee', 'meeting')),
-    CONSTRAINT unique_organization_tag_id_tagged_id UNIQUE (organization_tag_id, tagged_id)
+    CONSTRAINT unique_$organization_tag_id_$tagged_id UNIQUE (organization_tag_id, tagged_id)
 );
 
 CREATE TABLE IF NOT EXISTS nm_committee_manager_ids_userT (
@@ -1412,7 +1412,7 @@ CREATE TABLE IF NOT EXISTS gm_tag_tagged_idsT (
     tagged_id_assignment_id integer GENERATED ALWAYS AS (CASE WHEN split_part(tagged_id, '/', 1) = 'assignment' THEN cast(split_part(tagged_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES assignmentT(id),
     tagged_id_motion_id integer GENERATED ALWAYS AS (CASE WHEN split_part(tagged_id, '/', 1) = 'motion' THEN cast(split_part(tagged_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES motionT(id),
     CONSTRAINT valid_tagged_id_part1 CHECK (split_part(tagged_id, '/', 1) IN ('agenda_item', 'assignment', 'motion')),
-    CONSTRAINT unique_tag_id_tagged_id UNIQUE (tag_id, tagged_id)
+    CONSTRAINT unique_$tag_id_$tagged_id UNIQUE (tag_id, tagged_id)
 );
 
 CREATE TABLE IF NOT EXISTS nm_motion_all_derived_motion_ids_motionT (
@@ -1427,7 +1427,7 @@ CREATE TABLE IF NOT EXISTS gm_motion_state_extension_reference_idsT (
     state_extension_reference_id varchar(100) NOT NULL,
     state_extension_reference_id_motion_id integer GENERATED ALWAYS AS (CASE WHEN split_part(state_extension_reference_id, '/', 1) = 'motion' THEN cast(split_part(state_extension_reference_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES motionT(id),
     CONSTRAINT valid_state_extension_reference_id_part1 CHECK (split_part(state_extension_reference_id, '/', 1) IN ('motion')),
-    CONSTRAINT unique_motion_id_state_extension_reference_id UNIQUE (motion_id, state_extension_reference_id)
+    CONSTRAINT unique_$motion_id_$state_extension_reference_id UNIQUE (motion_id, state_extension_reference_id)
 );
 
 CREATE TABLE IF NOT EXISTS gm_motion_recommendation_extension_reference_idsT (
@@ -1436,7 +1436,7 @@ CREATE TABLE IF NOT EXISTS gm_motion_recommendation_extension_reference_idsT (
     recommendation_extension_reference_id varchar(100) NOT NULL,
     recommendation_extension_reference_id_motion_id integer GENERATED ALWAYS AS (CASE WHEN split_part(recommendation_extension_reference_id, '/', 1) = 'motion' THEN cast(split_part(recommendation_extension_reference_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES motionT(id),
     CONSTRAINT valid_recommendation_extension_reference_id_part1 CHECK (split_part(recommendation_extension_reference_id, '/', 1) IN ('motion')),
-    CONSTRAINT unique_motion_id_recommendation_extension_reference_id UNIQUE (motion_id, recommendation_extension_reference_id)
+    CONSTRAINT unique_$motion_id_$recommendation_extension_reference_id UNIQUE (motion_id, recommendation_extension_reference_id)
 );
 
 CREATE TABLE IF NOT EXISTS nm_motion_state_next_state_ids_motion_stateT (
@@ -1459,7 +1459,7 @@ CREATE TABLE IF NOT EXISTS gm_mediafile_attachment_idsT (
     attachment_id_topic_id integer GENERATED ALWAYS AS (CASE WHEN split_part(attachment_id, '/', 1) = 'topic' THEN cast(split_part(attachment_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES topicT(id),
     attachment_id_assignment_id integer GENERATED ALWAYS AS (CASE WHEN split_part(attachment_id, '/', 1) = 'assignment' THEN cast(split_part(attachment_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES assignmentT(id),
     CONSTRAINT valid_attachment_id_part1 CHECK (split_part(attachment_id, '/', 1) IN ('motion', 'topic', 'assignment')),
-    CONSTRAINT unique_mediafile_id_attachment_id UNIQUE (mediafile_id, attachment_id)
+    CONSTRAINT unique_$mediafile_id_$attachment_id UNIQUE (mediafile_id, attachment_id)
 );
 
 CREATE TABLE IF NOT EXISTS nm_chat_group_read_group_ids_groupT (

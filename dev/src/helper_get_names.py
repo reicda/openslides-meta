@@ -120,11 +120,23 @@ class HelperGetNames:
 
     @staticmethod
     @max_length
-    def get_generic_constraint_name(
+    def get_generic_valid_constraint_name(
         fname: str,
     ) -> str:
-        """ gets the name of a generic constraint"""
+        """ gets the name of a generic valid constraint"""
         return f"valid_{fname}_part1"
+
+    @staticmethod
+    @max_length
+    def get_generic_unique_constraint_name(
+        own_table_name_with_ref_column: str, own_table_column: str
+    ) -> str:
+        """ gets the name of a generic unique constraint
+          Params:
+          - {table_name}_{ref_column}
+          - {owcolumn}
+        """
+        return f"unique_${own_table_name_with_ref_column}_${own_table_column}"
 
 
 

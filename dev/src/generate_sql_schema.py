@@ -1,6 +1,3 @@
-import hashlib
-import os
-import re
 import string
 import sys
 from collections import defaultdict
@@ -12,9 +9,7 @@ from string import Formatter
 from textwrap import dedent
 from typing import Any, TypedDict, cast
 
-import requests
-import yaml
-from helper_get_names import HelperGetNames, TableFieldType
+from helper_get_names import HelperGetNames, InternalHelper, TableFieldType
 
 SOURCE = (Path(__file__).parent / ".." / ".." / "models.yml").resolve()
 DESTINATION = (Path(__file__).parent / ".." / "sql" / "schema_relational.sql").resolve()
@@ -112,14 +107,6 @@ class GenerateCodeBlocks:
                 continue
             schema_zone_texts: SchemaZoneTexts = defaultdict(str)  # type: ignore
             cls.intermediate_tables = {}
-            # commented, because automatically expanded. Would be better to not expand automatically
-            # for reducing redundancy
-            # if table_name == "_meta":
-            #     for enum_name, enum_data in fields.items():
-            #         pre_code += Helper.get_enum_type_definition(
-            #                 "", enum_name, enum_data
-            #             )
-            #     continue
 
             for fname, fdata in fields.items():
                 for attr in fdata:
@@ -236,8 +223,10 @@ class GenerateCodeBlocks:
     ) -> SchemaZoneTexts:
         text: SchemaZoneTexts = {}
         own_table_field = TableFieldType(table_name, fname, fdata)
-        foreign_table_field: TableFieldType = ModelsHelper.get_definitions_from_foreign(
-            fdata.get("to"), fdata.get("reference")
+        foreign_table_field: TableFieldType = (
+            TableFieldType.get_definitions_from_foreign(
+                fdata.get("to"), fdata.get("reference")
+            )
         )
         final_info, error = Helper.check_relation_definitions(
             own_table_field, [foreign_table_field]
@@ -316,9 +305,11 @@ class GenerateCodeBlocks:
         """
         text: SchemaZoneTexts = {}
         own_table_field = TableFieldType(table_name, fname, fdata)
-        foreign_table_field: TableFieldType = ModelsHelper.get_definitions_from_foreign(
-            fdata.get("to"),
-            fdata.get("reference"),
+        foreign_table_field: TableFieldType = (
+            TableFieldType.get_definitions_from_foreign(
+                fdata.get("to"),
+                fdata.get("reference"),
+            )
         )
         final_info, error = Helper.check_relation_definitions(
             own_table_field, [foreign_table_field]
@@ -548,7 +539,6 @@ class GenerateCodeBlocks:
 
 
 class Helper:
-    ref_compiled = compiled = re.compile(r"(^\w+\b).*?\((.*?)\)")
     FILE_TEMPLATE = dedent(
         """
         -- schema.sql for initial database setup OpenSlides
@@ -599,7 +589,7 @@ class Helper:
         )
     )
     GM_FOREIGN_TABLE_LINE_TEMPLATE = string.Template(
-        "    ${own_table_column}_${foreign_table_name}_id integer GENERATED ALWAYS AS (CASE WHEN split_part(${own_table_column}, '/', 1) = '${foreign_table_name}' THEN cast(split_part(${own_table_column}, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES ${foreign_table_name}T(id),"
+        "    ${gm_content_field} integer GENERATED ALWAYS AS (CASE WHEN split_part(${own_table_column}, '/', 1) = '${foreign_table_name}' THEN cast(split_part(${own_table_column}, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES ${foreign_table_name}T(id),"
     )
 
     RELATION_LIST_AGENDA = dedent(
@@ -677,21 +667,11 @@ class Helper:
         )
 
     @staticmethod
-    def get_enum_type_name(
-        table_name: str,
-        fname: str,
-    ) -> str:
-        if table_name:
-            return f"enum_{table_name}_{fname}"
-        else:
-            return f"enum_{fname}"
-
-    @staticmethod
     def get_enum_type_definition(table_name: str, fname: str, enum_: list[Any]) -> str:
         # enums per type are always strings in postgres
         enumeration = ", ".join([f"'{str(item)}'" for item in enum_])
         subst = {
-            "enum_type": Helper.get_enum_type_name(table_name, fname),
+            "enum_type": HelperGetNames.get_enum_type_name(fname, table_name),
             "enumeration": enumeration,
         }
         return Helper.ENUM_DEFINITION_TEMPLATE.substitute(subst)
@@ -770,10 +750,10 @@ class Helper:
         nm_table_name = HelperGetNames.get_nm_table_name(
             own_table_field, foreign_table_field
         )
-        field1 = Helper.get_field_in_n_m_relation_list(
+        field1 = HelperGetNames.get_field_in_n_m_relation_list(
             own_table_field, foreign_table_field.table
         )
-        field2 = Helper.get_field_in_n_m_relation_list(
+        field2 = HelperGetNames.get_field_in_n_m_relation_list(
             foreign_table_field, own_table_field.table
         )
         text = Helper.INTERMEDIATE_TABLE_N_M_RELATION_TEMPLATE.substitute(
@@ -804,11 +784,14 @@ class Helper:
             + "')"
         )
         foreign_table_ref_lines = []
-        subst_dict = {
-            "own_table_column": own_table_field.column[:-1],
-        }
+        own_table_column = own_table_field.column[:-1]
         for foreign_table_field in foreign_table_fields:
-            subst_dict["foreign_table_name"] = foreign_table_field.table
+            foreign_table_name = foreign_table_field.table
+            subst_dict = {
+                "own_table_column": own_table_column,
+                "foreign_table_name": foreign_table_name,
+                "gm_content_field": HelperGetNames.get_gm_content_field(own_table_column, foreign_table_name)
+            }
             foreign_table_ref_lines.append(
                 Helper.GM_FOREIGN_TABLE_LINE_TEMPLATE.substitute(subst_dict)
             )
@@ -827,15 +810,6 @@ class Helper:
         return gm_table_name, text
 
     @staticmethod
-    def get_field_in_n_m_relation_list(
-        own_table_field: TableFieldType, foreign_table_name: str
-    ) -> str:
-        if own_table_field.table == foreign_table_name:
-            return own_table_field.column[:-1]
-        else:
-            return f"{own_table_field.table}_id"
-
-    @staticmethod
     def get_initials(
         table_name: str, fname: str, type_: str, fdata: dict[str, Any]
     ) -> tuple[SubstDict, SchemaZoneTexts]:
@@ -846,7 +820,7 @@ class Helper:
         ]
         subst: SubstDict = cast(SubstDict, {k: "" for k in flist})
         if (enum_ := fdata.get("enum")) or fdata.get("items"):
-            subst_type = Helper.get_enum_type_name(table_name, fname)
+            subst_type = HelperGetNames.get_enum_type_name(fname, table_name)
             if not enum_:
                 subst_type += "[]"
         else:
@@ -1056,7 +1030,8 @@ class Helper:
 
     @staticmethod
     def get_generic_field_constraint(own_column: str, foreign_tables: list[str]) -> str:
-        return f"""    CONSTRAINT valid_{own_column}_part1 CHECK (split_part({own_column}, '/', 1) IN ('{"','".join(foreign_tables)}')),\n"""
+        constraint_name = HelperGetNames.get_generic_constraint_name(own_column)
+        return f"""    CONSTRAINT {constraint_name} CHECK (split_part({own_column}, '/', 1) IN ('{"','".join(foreign_tables)}')),\n"""
 
 
 class ModelsHelper:
@@ -1070,7 +1045,7 @@ class ModelsHelper:
         def _first_to_second(t1: str, t2: str) -> bool:
             for field in MODELS[t1].values():
                 if field.get("required") and field["type"].startswith("relation"):
-                    ftable, _ = Helper.get_foreign_key_table_column(
+                    ftable, _ = InternalHelper.get_foreign_key_table_column(
                         field.get("to"), field.get("reference")
                     )
                     if ftable == t2:
@@ -1080,24 +1055,6 @@ class ModelsHelper:
         if _first_to_second(own_table, foreign_table):
             return _first_to_second(foreign_table, own_table)
         return False
-
-    @staticmethod
-    def get_definitions_from_foreign(
-        to: str | None, reference: str | None
-    ) -> TableFieldType:
-        tname = ""
-        fname = ""
-        tfield: dict[str, Any] = {}
-        ref_column = ""
-        if to:
-            tname, fname, tfield = ModelsHelper.get_field_definition_from_to(to)
-            ref_column = "id"
-        if reference:
-            tname, ref_column = Helper.get_foreign_key_table_column(to, reference)
-            # if not fname:
-            #     fname = ref_column
-            #     tfield = {"type": "relation", "reference": reference}
-        return TableFieldType(tname, fname, tfield, ref_column)
 
     @staticmethod
     def get_definitions_from_foreign_list(
@@ -1118,26 +1075,17 @@ class ModelsHelper:
             fname = "/" + to["field"]
             for table in to["collections"]:
                 results.append(
-                    ModelsHelper.get_definitions_from_foreign(table + fname, None)
+                    TableFieldType.get_definitions_from_foreign(table + fname, None)
                 )
         elif isinstance(to, list):
             for collectionfield in to:
                 results.append(
-                    ModelsHelper.get_definitions_from_foreign(collectionfield, None)
+                    TableFieldType.get_definitions_from_foreign(collectionfield, None)
                 )
         elif reference:
             for ref in reference:
-                results.append(ModelsHelper.get_definitions_from_foreign(None, ref))
+                results.append(TableFieldType.get_definitions_from_foreign(None, ref))
         return results
-
-    @staticmethod
-    def get_field_definition_from_to(to: str) -> tuple[str, str, dict[str, Any]]:
-        tname, fname = to.split("/")
-        try:
-            field = MODELS[tname][fname]
-        except Exception as e:
-            field = {}
-        return tname, fname, field
 
 
 FIELD_TYPES: dict[str, dict[str, Any]] = {
@@ -1224,28 +1172,7 @@ def main() -> None:
     else:
         file = SOURCE
 
-    if os.path.isfile(file):
-        with open(file, "rb") as x:
-            models_yml = x.read()
-    else:
-        models_yml = requests.get(file).content
-
-    # calc checksum to assert the schema.sql is up-to-date
-    checksum = hashlib.md5(models_yml).hexdigest()
-
-    if len(sys.argv) > 1 and sys.argv[1] == "check":
-        from openslides_backend.models.models import MODELS_YML_CHECKSUM
-
-        assert checksum == MODELS_YML_CHECKSUM
-        print("models.py is up to date (checksum-comparison)")
-        sys.exit(0)
-
-    # Fix broken keys
-    models_yml = models_yml.replace(b" yes:", b' "yes":')
-    models_yml = models_yml.replace(b" no:", b' "no":')
-
-    # Load and parse models.yml
-    MODELS = yaml.safe_load(models_yml)
+    MODELS, checksum = InternalHelper.read_models_yml(file)
 
     (
         pre_code,

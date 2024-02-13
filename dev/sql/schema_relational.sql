@@ -2,7 +2,7 @@
 -- schema.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
 
--- MODELS_YML_CHECKSUM = 'c942b45a22fcdb3b4d25726f48a411dc'
+-- MODELS_YML_CHECKSUM = 'ed713236ea135e4f94c20b65ce2ce694'
 -- Type definitions
 DO $$
 BEGIN
@@ -2092,7 +2092,7 @@ SQL nt:1GtR => meeting/projection_ids:-> projection/content_object_id
 *** ntR:1t => meeting/default_projector_agenda_item_list_ids:-> projector/used_as_default_projector_for_agenda_item_list_in_meeting_id
 *** ntR:1t => meeting/default_projector_topic_ids:-> projector/used_as_default_projector_for_topic_in_meeting_id
 *** ntR:1t => meeting/default_projector_list_of_speakers_ids:-> projector/used_as_default_projector_for_list_of_speakers_in_meeting_id
-*** ntR:1t => meeting/default_projector_current_list_of_speakers_ids:-> projector/used_as_default_projector_for_current_list_of_speakers_in_meeting_id
+*** ntR:1t => meeting/default_projector_current_list_of_speakers_ids:-> projector/used_as_default_projector_for_current_los_in_meeting_id
 *** ntR:1t => meeting/default_projector_motion_ids:-> projector/used_as_default_projector_for_motion_in_meeting_id
 *** ntR:1t => meeting/default_projector_amendment_ids:-> projector/used_as_default_projector_for_amendment_in_meeting_id
 *** ntR:1t => meeting/default_projector_motion_block_ids:-> projector/used_as_default_projector_for_motion_block_in_meeting_id
@@ -2309,7 +2309,7 @@ SQL 1t:1tR => projector/used_as_reference_projector_meeting_id:-> meeting/refere
 *** 1t:ntR => projector/used_as_default_projector_for_agenda_item_list_in_meeting_id:-> meeting/default_projector_agenda_item_list_ids
 *** 1t:ntR => projector/used_as_default_projector_for_topic_in_meeting_id:-> meeting/default_projector_topic_ids
 *** 1t:ntR => projector/used_as_default_projector_for_list_of_speakers_in_meeting_id:-> meeting/default_projector_list_of_speakers_ids
-*** 1t:ntR => projector/used_as_default_projector_for_current_list_of_speakers_in_meeting_id:-> meeting/default_projector_current_list_of_speakers_ids
+*** 1t:ntR => projector/used_as_default_projector_for_current_los_in_meeting_id:-> meeting/default_projector_current_list_of_speakers_ids
 *** 1t:ntR => projector/used_as_default_projector_for_motion_in_meeting_id:-> meeting/default_projector_motion_ids
 *** 1t:ntR => projector/used_as_default_projector_for_amendment_in_meeting_id:-> meeting/default_projector_amendment_ids
 *** 1t:ntR => projector/used_as_default_projector_for_motion_block_in_meeting_id:-> meeting/default_projector_motion_block_ids

@@ -138,6 +138,21 @@ class HelperGetNames:
         """
         return f"unique_${own_table_name_with_ref_column}_${own_table_column}"
 
+    @staticmethod
+    @max_length
+    def get_minimum_constraint_name(
+        fname: str,
+    ) -> str:
+        """ gets the name of minimum constraint"""
+        return f"minimum_{fname}"
+
+    @staticmethod
+    @max_length
+    def get_minlength_constraint_name(
+        fname: str,
+    ) -> str:
+        """ gets the name of minLength constraint"""
+        return f"minlength_{fname}"
 
 
 class InternalHelper:

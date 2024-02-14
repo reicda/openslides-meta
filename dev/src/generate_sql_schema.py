@@ -843,12 +843,14 @@ class Helper:
                     f"{table_name}.{fname}: seems to be an invalid default value"
                 )
         if (minimum := fdata.get("minimum")) is not None:
+            minimum_constraint_name = HelperGetNames.get_minimum_constraint_name(fname)
             subst["minimum"] = (
-                f" CONSTRAINT minimum_{fname} CHECK ({fname} >= {minimum})"
+                f" CONSTRAINT {minimum_constraint_name} CHECK ({fname} >= {minimum})"
             )
         if minLength := fdata.get("minLength"):
+            minlength_constraint_name = HelperGetNames.get_minlength_constraint_name(fname)
             subst["minLength"] = (
-                f" CONSTRAINT minLength_{fname} CHECK (char_length({fname}) >= {minLength})"
+                f" CONSTRAINT {minlength_constraint_name} CHECK (char_length({fname}) >= {minLength})"
             )
         if comment := fdata.get("description"):
             text["alter_table"] = (
@@ -913,35 +915,23 @@ class Helper:
 
     @staticmethod
     def check_relation_definitions(
-        own: TableFieldType, foreigns: list[TableFieldType]
+        own_field: TableFieldType, foreign_fields: list[TableFieldType]
     ) -> tuple[str, bool]:
         error = False
         text = ""
-        own_c, tmp_error = Helper.get_cardinality(own.field_def)
+        own_c, tmp_error = Helper.get_cardinality(own_field.field_def)
         error = error or tmp_error
         foreigns_c = []
         foreign_collectionfields = []
-        for foreign in foreigns:
-            foreign_c, tmp_error = Helper.get_cardinality(foreign.field_def)
+        for foreign_field in foreign_fields:
+            foreign_c, tmp_error = Helper.get_cardinality(foreign_field.field_def)
             foreigns_c.append(foreign_c)
             error = error or tmp_error
-            foreign_collectionfields.append(foreign.collectionfield)
+            foreign_collectionfields.append(foreign_field.collectionfield)
 
-        # if table_field["type"] == "relation":
-        #     if foreign_field and foreign_field.get("type") == "relation":
-        #         if (("sql" in table_field) == ("sql" in foreign_field)) and (
-        #             ("required" in table_field) == ("required" in foreign_field)
-        #         ):
-        #             error = True
-        # elif table_field["type"] == "relation-list":
-        #     if foreign_field and foreign_field.get("type") == "relation":
-        #         if (
-        #             not (table_field.get("sql")) or (foreign_field.get("to"))
-        #         ) or table_field["required"]:
-        #             error = True
         if error:
             text = "*** "
-        text += f"{own_c}:{','.join(foreigns_c)} => {own.collectionfield}:-> {','.join(foreign_collectionfields)}\n"
+        text += f"{own_c}:{','.join(foreigns_c)} => {own_field.collectionfield}:-> {','.join(foreign_collectionfields)}\n"
         return text, error
 
     @staticmethod

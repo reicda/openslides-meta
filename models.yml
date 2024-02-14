@@ -2527,7 +2527,7 @@ motion:
     type: relation
     to: motion_state/motion_recommendation_ids
     equal_fields: meeting_id
-    restriction_mode: C
+    restriction_mode: E
   state_extension_reference_ids:
     type: generic-relation-list
     to:

@@ -610,7 +610,6 @@ class Helper:
             s: sql directive given, but must be generated
             s+: sql directive includive sql-statement
             R: Required
-            p: primary set for deciding field/sql
         Model.Field -> Model.Field
             model.field names
         */
@@ -861,7 +860,7 @@ class Helper:
     @staticmethod
     def get_cardinality(field: dict[str, Any] | None) -> tuple[str, bool]:
         """
-        Returns string with cardinality string (1, 1G, n or nG= Cardinality, G=Generatic-relation, r=reference, t=to, s=sql, R=required, p=primary
+        Returns string with cardinality string (1, 1G, n or nG= Cardinality, G=Generatic-relation, r=reference, t=to, s=sql, R=required)
         """
         if field:
             required = bool(field.get("required"))
@@ -869,7 +868,6 @@ class Helper:
             sql_empty = field.get("sql") == ""
             to = bool(field.get("to"))
             reference = bool(field.get("reference"))
-            primary = bool(field.get("primary"))
 
             # general rules of inconsistent field descriptions on field level
             error = (
@@ -906,8 +904,6 @@ class Helper:
                     result += "-"
             if required:
                 result += "R"
-            if primary:
-                result += "p"
         else:
             result = ""
             error = False
@@ -986,14 +982,9 @@ class Helper:
                     if bool(own.field_def.get("reference", False)) == bool(
                         foreign.field_def.get("reference", False)
                     ):
-                        if own.field_def.get("primary", False) == foreign.field_def.get(
-                            "primary", False
-                        ):
-                            raise Exception(
-                                f"Type combination undecidable: {own_type}:{foreign_type} on field {own.collectionfield}. Give field or reverse field a 'reference' Attribut, if you want the value to be settable on this field"
-                            )
-                        else:
-                            return own.field_def.get("primary", False)
+                        raise Exception(
+                            f"Type combination undecidable: {own_type}:{foreign_type} on field {own.collectionfield}. Give field or reverse field a 'reference' Attribut, if you want the value to be settable on this field"
+                        )
                     else:
                         return bool(own.field_def.get("reference", False))
                 else:

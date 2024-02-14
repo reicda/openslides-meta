@@ -673,9 +673,8 @@ committee:
     restriction_mode: A
   default_meeting_id:
     type: relation
-    to: meeting/default_meeting_for_committee_id
+    reference: meeting(id)
     restriction_mode: A
-    primary: True
   user_ids:
     type: number[]
     to: user/committee_ids
@@ -1619,84 +1618,68 @@ meeting:
   # Logos and Fonts
   logo_projector_main_id:
     type: relation
-    to: mediafile/used_as_logo_projector_main_in_meeting_id
+    reference: mediafile(id)
     restriction_mode: B
-    primary: True
   logo_projector_header_id:
     type: relation
-    to: mediafile/used_as_logo_projector_header_in_meeting_id
+    reference: mediafile(id)
     restriction_mode: B
-    primary: True
   logo_web_header_id:
     type: relation
-    to: mediafile/used_as_logo_web_header_in_meeting_id
+    reference: mediafile(id)
     restriction_mode: B
-    primary: True
   logo_pdf_header_l_id:
     type: relation
-    to: mediafile/used_as_logo_pdf_header_l_in_meeting_id
+    reference: mediafile(id)
     restriction_mode: B
-    primary: True
   logo_pdf_header_r_id:
     type: relation
-    to: mediafile/used_as_logo_pdf_header_r_in_meeting_id
+    reference: mediafile(id)
     restriction_mode: B
-    primary: True
   logo_pdf_footer_l_id:
     type: relation
-    to: mediafile/used_as_logo_pdf_footer_l_in_meeting_id
+    reference: mediafile(id)
     restriction_mode: B
-    primary: True
   logo_pdf_footer_r_id:
     type: relation
-    to: mediafile/used_as_logo_pdf_footer_r_in_meeting_id
+    reference: mediafile(id)
     restriction_mode: B
-    primary: True
   logo_pdf_ballot_paper_id:
     type: relation
-    to: mediafile/used_as_logo_pdf_ballot_paper_in_meeting_id
+    reference: mediafile(id)
     restriction_mode: B
-    primary: True
   font_regular_id:
     type: relation
-    to: mediafile/used_as_font_regular_in_meeting_id
+    reference: mediafile(id)
     restriction_mode: B
-    primary: True
   font_italic_id:
     type: relation
-    to: mediafile/used_as_font_italic_in_meeting_id
+    reference: mediafile(id)
     restriction_mode: B
-    primary: True
   font_bold_id:
     type: relation
-    to: mediafile/used_as_font_bold_in_meeting_id
+    reference: mediafile(id)
     restriction_mode: B
-    primary: True
   font_bold_italic_id:
     type: relation
-    to: mediafile/used_as_font_bold_italic_in_meeting_id
+    reference: mediafile(id)
     restriction_mode: B
-    primary: True
   font_monospace_id:
     type: relation
-    to: mediafile/used_as_font_monospace_in_meeting_id
+    reference: mediafile(id)
     restriction_mode: B
-    primary: True
   font_chyron_speaker_name_id:
     type: relation
-    to: mediafile/used_as_font_chyron_speaker_name_in_meeting_id
+    reference: mediafile(id)
     restriction_mode: B
-    primary: True
   font_projector_h1_id:
     type: relation
-    to: mediafile/used_as_font_projector_h1_in_meeting_id
+    reference: mediafile(id)
     restriction_mode: B
-    primary: True
   font_projector_h2_id:
     type: relation
-    to: mediafile/used_as_font_projector_h2_in_meeting_id
+    reference: mediafile(id)
     restriction_mode: B
-    primary: True
   # Other relations
   committee_id:
     type: relation
@@ -1816,9 +1799,8 @@ meeting:
     restriction_mode: B
   admin_group_id:
     type: relation
-    to: group/admin_group_for_meeting_id
+    reference: group(id)
     restriction_mode: B
-    primary: True
 
 group:
   id:

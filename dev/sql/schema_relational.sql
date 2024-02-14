@@ -2,7 +2,7 @@
 -- schema.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
 
--- MODELS_YML_CHECKSUM = 'ed713236ea135e4f94c20b65ce2ce694'
+-- MODELS_YML_CHECKSUM = 'ca02291a1b40ccea8a47867a55eafe4c'
 -- Type definitions
 DO $$
 BEGIN
@@ -1969,7 +1969,6 @@ Field Attributes:Field Attributes opposite side
     s: sql directive given, but must be generated
     s+: sql directive includive sql-statement
     R: Required
-    p: primary set for deciding field/sql
 Model.Field -> Model.Field
     model.field names
 */
@@ -2014,7 +2013,7 @@ FIELD nGt:nt,nt => organization_tag/tagged_ids:-> committee/organization_tag_ids
 SQL 1t:1rR => theme/theme_for_organization_id:-> organization/theme_id
 
 SQL nt:1tR => committee/meeting_ids:-> meeting/committee_id
-FIELD 1tp:1t => committee/default_meeting_id:-> meeting/default_meeting_for_committee_id
+FIELD 1r: => committee/default_meeting_id:-> meeting/
 SQL nt:nt => committee/manager_ids:-> user/committee_management_ids
 SQL nt:nt => committee/forward_to_committee_ids:-> committee/receive_forwardings_from_committee_ids
 SQL nt:nt => committee/receive_forwardings_from_committee_ids:-> committee/forward_to_committee_ids
@@ -2065,24 +2064,24 @@ SQL nt:1tR => meeting/assignment_candidate_ids:-> assignment_candidate/meeting_i
 SQL nt:1tR => meeting/personal_note_ids:-> personal_note/meeting_id
 SQL nt:1tR => meeting/chat_group_ids:-> chat_group/meeting_id
 SQL nt:1tR => meeting/chat_message_ids:-> chat_message/meeting_id
-FIELD 1tp:1t => meeting/logo_projector_main_id:-> mediafile/used_as_logo_projector_main_in_meeting_id
-FIELD 1tp:1t => meeting/logo_projector_header_id:-> mediafile/used_as_logo_projector_header_in_meeting_id
-FIELD 1tp:1t => meeting/logo_web_header_id:-> mediafile/used_as_logo_web_header_in_meeting_id
-FIELD 1tp:1t => meeting/logo_pdf_header_l_id:-> mediafile/used_as_logo_pdf_header_l_in_meeting_id
-FIELD 1tp:1t => meeting/logo_pdf_header_r_id:-> mediafile/used_as_logo_pdf_header_r_in_meeting_id
-FIELD 1tp:1t => meeting/logo_pdf_footer_l_id:-> mediafile/used_as_logo_pdf_footer_l_in_meeting_id
-FIELD 1tp:1t => meeting/logo_pdf_footer_r_id:-> mediafile/used_as_logo_pdf_footer_r_in_meeting_id
-FIELD 1tp:1t => meeting/logo_pdf_ballot_paper_id:-> mediafile/used_as_logo_pdf_ballot_paper_in_meeting_id
-FIELD 1tp:1t => meeting/font_regular_id:-> mediafile/used_as_font_regular_in_meeting_id
-FIELD 1tp:1t => meeting/font_italic_id:-> mediafile/used_as_font_italic_in_meeting_id
-FIELD 1tp:1t => meeting/font_bold_id:-> mediafile/used_as_font_bold_in_meeting_id
-FIELD 1tp:1t => meeting/font_bold_italic_id:-> mediafile/used_as_font_bold_italic_in_meeting_id
-FIELD 1tp:1t => meeting/font_monospace_id:-> mediafile/used_as_font_monospace_in_meeting_id
-FIELD 1tp:1t => meeting/font_chyron_speaker_name_id:-> mediafile/used_as_font_chyron_speaker_name_in_meeting_id
-FIELD 1tp:1t => meeting/font_projector_h1_id:-> mediafile/used_as_font_projector_h1_in_meeting_id
-FIELD 1tp:1t => meeting/font_projector_h2_id:-> mediafile/used_as_font_projector_h2_in_meeting_id
+FIELD 1r: => meeting/logo_projector_main_id:-> mediafile/
+FIELD 1r: => meeting/logo_projector_header_id:-> mediafile/
+FIELD 1r: => meeting/logo_web_header_id:-> mediafile/
+FIELD 1r: => meeting/logo_pdf_header_l_id:-> mediafile/
+FIELD 1r: => meeting/logo_pdf_header_r_id:-> mediafile/
+FIELD 1r: => meeting/logo_pdf_footer_l_id:-> mediafile/
+FIELD 1r: => meeting/logo_pdf_footer_r_id:-> mediafile/
+FIELD 1r: => meeting/logo_pdf_ballot_paper_id:-> mediafile/
+FIELD 1r: => meeting/font_regular_id:-> mediafile/
+FIELD 1r: => meeting/font_italic_id:-> mediafile/
+FIELD 1r: => meeting/font_bold_id:-> mediafile/
+FIELD 1r: => meeting/font_bold_italic_id:-> mediafile/
+FIELD 1r: => meeting/font_monospace_id:-> mediafile/
+FIELD 1r: => meeting/font_chyron_speaker_name_id:-> mediafile/
+FIELD 1r: => meeting/font_projector_h1_id:-> mediafile/
+FIELD 1r: => meeting/font_projector_h2_id:-> mediafile/
 FIELD 1tR:nt => meeting/committee_id:-> committee/meeting_ids
-SQL 1t:1tp => meeting/default_meeting_for_committee_id:-> committee/default_meeting_id
+SQL 1t:1r => meeting/default_meeting_for_committee_id:-> committee/default_meeting_id
 SQL nt:nGt => meeting/organization_tag_ids:-> organization_tag/tagged_ids
 SQL nt:nt => meeting/present_user_ids:-> user/is_present_in_meeting_ids
 FIELD 1tR:1t => meeting/reference_projector_id:-> projector/used_as_reference_projector_meeting_id
@@ -2104,11 +2103,11 @@ SQL nt:1GtR => meeting/projection_ids:-> projection/content_object_id
 *** ntR:1t => meeting/default_projector_motion_poll_ids:-> projector/used_as_default_projector_for_motion_poll_in_meeting_id
 *** ntR:1t => meeting/default_projector_poll_ids:-> projector/used_as_default_projector_for_poll_in_meeting_id
 FIELD 1tR:1t => meeting/default_group_id:-> group/default_group_for_meeting_id
-FIELD 1tp:1t => meeting/admin_group_id:-> group/admin_group_for_meeting_id
+FIELD 1r: => meeting/admin_group_id:-> group/
 
 SQL nt:nt => group/meeting_user_ids:-> meeting_user/group_ids
 SQL 1t:1tR => group/default_group_for_meeting_id:-> meeting/default_group_id
-SQL 1t:1tp => group/admin_group_for_meeting_id:-> meeting/admin_group_id
+SQL 1t:1r => group/admin_group_for_meeting_id:-> meeting/admin_group_id
 SQL nt:nt => group/mediafile_access_group_ids:-> mediafile/access_group_ids
 SQL nt:nt => group/mediafile_inherited_access_group_ids:-> mediafile/inherited_access_group_ids
 SQL nt:nt => group/read_comment_section_ids:-> motion_comment_section/read_group_ids
@@ -2285,22 +2284,22 @@ SQL 1t:1GtR => mediafile/list_of_speakers_id:-> list_of_speakers/content_object_
 SQL nt:1GtR => mediafile/projection_ids:-> projection/content_object_id
 FIELD nGt:nt,nt,nt => mediafile/attachment_ids:-> motion/attachment_ids,topic/attachment_ids,assignment/attachment_ids
 FIELD 1GtR:nt,nt => mediafile/owner_id:-> meeting/mediafile_ids,organization/mediafile_ids
-SQL 1t:1tp => mediafile/used_as_logo_projector_main_in_meeting_id:-> meeting/logo_projector_main_id
-SQL 1t:1tp => mediafile/used_as_logo_projector_header_in_meeting_id:-> meeting/logo_projector_header_id
-SQL 1t:1tp => mediafile/used_as_logo_web_header_in_meeting_id:-> meeting/logo_web_header_id
-SQL 1t:1tp => mediafile/used_as_logo_pdf_header_l_in_meeting_id:-> meeting/logo_pdf_header_l_id
-SQL 1t:1tp => mediafile/used_as_logo_pdf_header_r_in_meeting_id:-> meeting/logo_pdf_header_r_id
-SQL 1t:1tp => mediafile/used_as_logo_pdf_footer_l_in_meeting_id:-> meeting/logo_pdf_footer_l_id
-SQL 1t:1tp => mediafile/used_as_logo_pdf_footer_r_in_meeting_id:-> meeting/logo_pdf_footer_r_id
-SQL 1t:1tp => mediafile/used_as_logo_pdf_ballot_paper_in_meeting_id:-> meeting/logo_pdf_ballot_paper_id
-SQL 1t:1tp => mediafile/used_as_font_regular_in_meeting_id:-> meeting/font_regular_id
-SQL 1t:1tp => mediafile/used_as_font_italic_in_meeting_id:-> meeting/font_italic_id
-SQL 1t:1tp => mediafile/used_as_font_bold_in_meeting_id:-> meeting/font_bold_id
-SQL 1t:1tp => mediafile/used_as_font_bold_italic_in_meeting_id:-> meeting/font_bold_italic_id
-SQL 1t:1tp => mediafile/used_as_font_monospace_in_meeting_id:-> meeting/font_monospace_id
-SQL 1t:1tp => mediafile/used_as_font_chyron_speaker_name_in_meeting_id:-> meeting/font_chyron_speaker_name_id
-SQL 1t:1tp => mediafile/used_as_font_projector_h1_in_meeting_id:-> meeting/font_projector_h1_id
-SQL 1t:1tp => mediafile/used_as_font_projector_h2_in_meeting_id:-> meeting/font_projector_h2_id
+SQL 1t:1r => mediafile/used_as_logo_projector_main_in_meeting_id:-> meeting/logo_projector_main_id
+SQL 1t:1r => mediafile/used_as_logo_projector_header_in_meeting_id:-> meeting/logo_projector_header_id
+SQL 1t:1r => mediafile/used_as_logo_web_header_in_meeting_id:-> meeting/logo_web_header_id
+SQL 1t:1r => mediafile/used_as_logo_pdf_header_l_in_meeting_id:-> meeting/logo_pdf_header_l_id
+SQL 1t:1r => mediafile/used_as_logo_pdf_header_r_in_meeting_id:-> meeting/logo_pdf_header_r_id
+SQL 1t:1r => mediafile/used_as_logo_pdf_footer_l_in_meeting_id:-> meeting/logo_pdf_footer_l_id
+SQL 1t:1r => mediafile/used_as_logo_pdf_footer_r_in_meeting_id:-> meeting/logo_pdf_footer_r_id
+SQL 1t:1r => mediafile/used_as_logo_pdf_ballot_paper_in_meeting_id:-> meeting/logo_pdf_ballot_paper_id
+SQL 1t:1r => mediafile/used_as_font_regular_in_meeting_id:-> meeting/font_regular_id
+SQL 1t:1r => mediafile/used_as_font_italic_in_meeting_id:-> meeting/font_italic_id
+SQL 1t:1r => mediafile/used_as_font_bold_in_meeting_id:-> meeting/font_bold_id
+SQL 1t:1r => mediafile/used_as_font_bold_italic_in_meeting_id:-> meeting/font_bold_italic_id
+SQL 1t:1r => mediafile/used_as_font_monospace_in_meeting_id:-> meeting/font_monospace_id
+SQL 1t:1r => mediafile/used_as_font_chyron_speaker_name_in_meeting_id:-> meeting/font_chyron_speaker_name_id
+SQL 1t:1r => mediafile/used_as_font_projector_h1_in_meeting_id:-> meeting/font_projector_h1_id
+SQL 1t:1r => mediafile/used_as_font_projector_h2_in_meeting_id:-> meeting/font_projector_h2_id
 
 SQL nt:1t => projector/current_projection_ids:-> projection/current_projector_id
 SQL nt:1t => projector/preview_projection_ids:-> projection/preview_projector_id
@@ -2347,4 +2346,4 @@ FIELD 1tR:nt => chat_message/meeting_id:-> meeting/chat_message_ids
 
 */
 
-/*   Missing attribute handling for constant, sql, reference, on_delete, equal_fields, primary */
+/*   Missing attribute handling for constant, sql, reference, on_delete, equal_fields */

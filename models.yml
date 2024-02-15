@@ -2537,7 +2537,7 @@ motion:
     type: relation
     to: motion_state/motion_recommendation_ids
     equal_fields: meeting_id
-    restriction_mode: C
+    restriction_mode: E
   state_extension_reference_ids:
     type: generic-relation-list
     to:
@@ -2998,7 +2998,7 @@ motion_state:
   recommendation_label:
     type: string
     restriction_mode: A
-  is_internal_recommendation:
+  is_internal:
     type: boolean
     restriction_mode: A
   css_class:

@@ -541,7 +541,7 @@ class GenerateCodeBlocks:
 class Helper:
     FILE_TEMPLATE = dedent(
         """
-        -- schema.sql for initial database setup OpenSlides
+        -- schema_relational.sql for initial database setup OpenSlides
         -- Code generated. DO NOT EDIT.
 
         """
@@ -1144,7 +1144,7 @@ FIELD_TYPES: dict[str, dict[str, Any]] = {
 
 def main() -> None:
     """
-    Main entry point for this script to generate the schema.sql from models.yml.
+    Main entry point for this script to generate the schema_relational.sql from models.yml.
     """
 
     global MODELS

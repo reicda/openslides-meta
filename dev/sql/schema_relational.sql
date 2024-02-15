@@ -1,5 +1,5 @@
 
--- schema.sql for initial database setup OpenSlides
+-- schema_relational.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
 
 -- MODELS_YML_CHECKSUM = 'ca02291a1b40ccea8a47867a55eafe4c'

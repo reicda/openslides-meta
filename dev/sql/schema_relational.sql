@@ -1001,7 +1001,7 @@ CREATE TABLE IF NOT EXISTS motion_stateT (
     recommendation_label varchar(256),
     is_internal_recommendation boolean,
     css_class enum_motion_state_css_class NOT NULL DEFAULT 'lightblue',
-    restrictions enum_motion_state_restrictions[] DEFAULT '{""}',
+    restrictions enum_motion_state_restrictions[] DEFAULT '{}',
     allow_support boolean DEFAULT False,
     allow_create_poll boolean DEFAULT False,
     allow_submitter_edit boolean DEFAULT False,

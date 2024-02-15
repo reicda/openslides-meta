@@ -835,7 +835,7 @@ class Helper:
             elif isinstance(default, (int, bool, float)):
                 subst["default"] = f" DEFAULT {default}"
             elif isinstance(default, list):
-                tmp = '{"' + '", "'.join(default) + '"}'
+                tmp = '{"' + '", "'.join(default) + '"}' if default else '{}'
                 subst["default"] = f" DEFAULT '{tmp}'"
             else:
                 raise Exception(

@@ -32,6 +32,9 @@ mypy:
 validate-models:
 	python src/validate.py
 
+generate-relational-schema:
+	python src/generate_sql_schema.py
+
 # Docker manage commands
 
 run-dev:

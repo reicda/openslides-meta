@@ -35,6 +35,20 @@ validate-models:
 generate-relational-schema:
 	python src/generate_sql_schema.py
 
+drop-database:
+	dropdb -f -e --if-exists -h ${POSTGRES_HOST} -p ${POSTGRES_PORT} -U ${POSTGRES_USER} ${POSTGRES_DB}
+
+create-database:
+	createdb -e -h ${POSTGRES_HOST} -p ${POSTGRES_PORT} -U ${POSTGRES_USER} ${POSTGRES_DB}
+
+apply-db-schema:
+	scripts/apply_db_schema.sh
+
+create-database-with-schema: drop-database create-database apply-db-schema
+
+run-psql:
+	psql -h ${POSTGRES_HOST} -p ${POSTGRES_PORT} -U ${POSTGRES_USER} -d ${POSTGRES_DB}
+
 # Docker manage commands
 
 run-dev:

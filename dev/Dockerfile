@@ -1,6 +1,6 @@
 FROM python:3.10.13-slim-bookworm
 
-RUN apt-get update && apt-get install --yes make bash-completion
+RUN apt-get update && apt-get install --yes make bash-completion postgresql-client
 
 WORKDIR /app/dev/
 

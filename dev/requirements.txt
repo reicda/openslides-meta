@@ -9,7 +9,7 @@ pyyaml==6.0.1
 simplejson==3.19.2
 debugpy==1.8.0
 requests==2.31.0
-psycopg2==2.9.9
+psycopg2-binary==2.9.9  # only dev, in production use psycopg2
 
 # typing
 types-PyYAML==6.0.12.12

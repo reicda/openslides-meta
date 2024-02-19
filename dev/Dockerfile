@@ -10,4 +10,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 5678
 
 STOPSIGNAL SIGKILL
+
+ENTRYPOINT ["scripts/entrypoint.sh"]
 CMD sleep infinity

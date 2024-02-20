@@ -1014,7 +1014,15 @@ meeting:
     type: boolean
     default: False
     restriction_mode: B
+  list_of_speakers_allow_multiple_speakers:
+    type: boolean
+    default: False
+    restriction_mode: B
   list_of_speakers_enable_point_of_order_speakers:
+    type: boolean
+    default: True
+    restriction_mode: B
+  list_of_speakers_can_create_point_of_order_for_others:
     type: boolean
     default: True
     restriction_mode: B

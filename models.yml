@@ -1024,7 +1024,7 @@ meeting:
     restriction_mode: B
   list_of_speakers_can_create_point_of_order_for_others:
     type: boolean
-    default: True
+    default: False
     restriction_mode: B
   list_of_speakers_enable_point_of_order_categories:
     type: boolean

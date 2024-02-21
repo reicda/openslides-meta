@@ -15,11 +15,6 @@ jobs:
       PAYLOAD: '{"commit": "${{ github.sha }}"}'
 
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
       - name: Generate access token
         uses: tibdex/github-app-token@v2
         id: generate-token

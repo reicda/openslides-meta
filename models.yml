@@ -4238,6 +4238,7 @@ import_preview:
       - participant
       - topic
       - committee
+      - motion
     restriction_mode: A
   state:
     type: string

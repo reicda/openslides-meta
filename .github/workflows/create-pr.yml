@@ -26,19 +26,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          path: current-meta-repository
+
+      - uses: actions/checkout@v4
+        with:
           repository: OpenSlides/${{ inputs.repository }}
+          path: service-repository
           fetch-depth: 0
           submodules: true
 
       - name: Checkout meta repository commit
-        working-directory: .git/modules/openslides-meta/
+        working-directory: service-repository/.git/modules/openslides-meta/
         run: git fetch origin && git checkout ${{ inputs.commit }}
       
       - name: Update repository files
         if: inputs.setup-action != ''
         uses: jenseng/dynamic-uses@v1
         with:
-          uses: ./.github/actions/${{ inputs.setup-action }}
+          uses: ./current-meta-repository/.github/actions/${{ inputs.setup-action }}
 
       - name: Generate access token
         uses: tibdex/github-app-token@v2
@@ -50,6 +55,7 @@ jobs:
       - name: Create or update PR
         uses: peter-evans/create-pull-request@v6
         with:
+          path: service-repository
           token: ${{ steps.generate-token.outputs.token }}
           commit-message: Update meta repository
           branch: dep/update-meta-repo

@@ -21,7 +21,7 @@ jobs:
         include:
           - repository: openslides-autoupdate-service
             assignee: ostcar
-            setup-action: setup-autoupdate-pr
+            setup-action: setup-autoupdate-pr.yml
           - repository: openslides-backend
             assignee: jsangmeister
           - repository: openslides-client

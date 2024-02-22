@@ -2,10 +2,6 @@ name: Prepare meta update PR in autoupdate repo
 
 runs:
   using: "composite"
-  defaults:
-    run:
-      working-directory: service-repository/
-
   steps:
     - name: Set up go
       uses: actions/setup-go@v5
@@ -14,4 +10,5 @@ runs:
 
     - name: Run go generate
       shell: bash
+      working-directory: service-repository/
       run: go generate ./...

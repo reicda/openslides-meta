@@ -544,6 +544,18 @@ class Helper:
         -- schema_relational.sql for initial database setup OpenSlides
         -- Code generated. DO NOT EDIT.
 
+        CREATE OR REPLACE FUNCTION truncate_tables(username IN VARCHAR) RETURNS void AS $$
+        DECLARE
+            statements CURSOR FOR
+                SELECT tablename FROM pg_tables
+                WHERE tableowner = username AND schemaname = 'public';
+        BEGIN
+            FOR stmt IN statements LOOP
+                EXECUTE 'TRUNCATE TABLE ' || quote_ident(stmt.tablename) || ' RESTART IDENTITY CASCADE;';
+            END LOOP;
+        END;
+        $$ LANGUAGE plpgsql;
+
         """
     )
     FIELD_TEMPLATE = string.Template(
@@ -789,7 +801,9 @@ class Helper:
             subst_dict = {
                 "own_table_column": own_table_column,
                 "foreign_table_name": foreign_table_name,
-                "gm_content_field": HelperGetNames.get_gm_content_field(own_table_column, foreign_table_name)
+                "gm_content_field": HelperGetNames.get_gm_content_field(
+                    own_table_column, foreign_table_name
+                ),
             }
             foreign_table_ref_lines.append(
                 Helper.GM_FOREIGN_TABLE_LINE_TEMPLATE.substitute(subst_dict)
@@ -799,13 +813,19 @@ class Helper:
             {
                 "table_name": HelperGetNames.get_table_name(gm_table_name),
                 "own_table_name": HelperGetNames.get_table_name(own_table_field.table),
-                "own_table_name_with_ref_column": (own_table_name_with_ref_column := f"{own_table_field.table}_{own_table_field.ref_column}"),
+                "own_table_name_with_ref_column": (
+                    own_table_name_with_ref_column := f"{own_table_field.table}_{own_table_field.ref_column}"
+                ),
                 "own_table_ref_column": own_table_field.ref_column,
                 "own_table_column": own_table_column,
                 "tuple_of_foreign_table_names": joined_table_names,
                 "foreign_table_ref_lines": "\n".join(foreign_table_ref_lines),
-                "valid_constraint_name": HelperGetNames.get_generic_valid_constraint_name(own_table_column),
-                "unique_constraint_name": HelperGetNames.get_generic_unique_constraint_name(own_table_name_with_ref_column, own_table_column),
+                "valid_constraint_name": HelperGetNames.get_generic_valid_constraint_name(
+                    own_table_column
+                ),
+                "unique_constraint_name": HelperGetNames.get_generic_unique_constraint_name(
+                    own_table_name_with_ref_column, own_table_column
+                ),
             }
         )
         return gm_table_name, text
@@ -835,7 +855,7 @@ class Helper:
             elif isinstance(default, (int, bool, float)):
                 subst["default"] = f" DEFAULT {default}"
             elif isinstance(default, list):
-                tmp = '{"' + '", "'.join(default) + '"}' if default else '{}'
+                tmp = '{"' + '", "'.join(default) + '"}' if default else "{}"
                 subst["default"] = f" DEFAULT '{tmp}'"
             else:
                 raise Exception(
@@ -847,7 +867,9 @@ class Helper:
                 f" CONSTRAINT {minimum_constraint_name} CHECK ({fname} >= {minimum})"
             )
         if minLength := fdata.get("minLength"):
-            minlength_constraint_name = HelperGetNames.get_minlength_constraint_name(fname)
+            minlength_constraint_name = HelperGetNames.get_minlength_constraint_name(
+                fname
+            )
             subst["minLength"] = (
                 f" CONSTRAINT {minlength_constraint_name} CHECK (char_length({fname}) >= {minLength})"
             )

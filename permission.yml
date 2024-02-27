@@ -63,5 +63,5 @@ user:
         can_manage_presence:
             can_see:
         can_update:
-            can_see_personal_data:
+            can_see_sensitive_data:
                 can_see:

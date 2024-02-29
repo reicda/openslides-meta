@@ -272,10 +272,7 @@ user:
     restriction_mode: A
   email:
     type: string
-    restriction_mode: E
-  default_number:
-    type: string
-    restriction_mode: A
+    restriction_mode: B
   default_vote_weight:
     type: decimal(6)
     default: "1.000000"
@@ -1927,7 +1924,9 @@ group:
         - tag.can_manage
         - user.can_manage
         - user.can_manage_presence
+        - user.can_see_sensitive_data
         - user.can_see
+        - user.can_update
     restriction_mode: A
   weight:
     type: number

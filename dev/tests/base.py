@@ -520,6 +520,25 @@ class BaseTestCase(TestCase):
                     },
                 ])
                 wf_complex_first_state_id = wf_complex_motion_state_ids[0]
+
+                DbUtils.insert_many_wrapper(curs, "nm_motion_state_next_state_ids_motion_stateT", 
+                    [
+                        {"next_state_id": 2, "previous_state_id": 1},
+                        {"next_state_id": 3, "previous_state_id": 1},
+                        {"next_state_id": 4, "previous_state_id": 1},
+                        {"next_state_id": 6, "previous_state_id": 5},
+                        {"next_state_id": 10, "previous_state_id": 5},
+                        {"next_state_id": 7, "previous_state_id": 6},
+                        {"next_state_id": 10, "previous_state_id": 6},
+                        {"next_state_id": 15, "previous_state_id": 6},
+                        {"next_state_id": 8, "previous_state_id": 7},
+                        {"next_state_id": 9, "previous_state_id": 7},
+                        {"next_state_id": 10, "previous_state_id": 7},
+                        {"next_state_id": 11, "previous_state_id": 7},
+                        {"next_state_id": 12, "previous_state_id": 7},
+                        {"next_state_id": 13, "previous_state_id": 7},
+                        {"next_state_id": 14, "previous_state_id": 7},
+                    ], returning='')
                 assert [workflow_simple_id, workflow_complex_id] == DbUtils.insert_many_wrapper(curs, "motion_workflowT",
                     [
                         {
@@ -585,9 +604,3 @@ class BaseTestCase(TestCase):
                     "admin_group_id": group_ids[1]
                 })
                 curs.execute("UPDATE committeeT SET default_meeting_id = %s where id = %s;", (meeting_id, committee_id))
-                """todo:
-                workflow anlegen
-
-                """
-        print("Transaction committed")
-

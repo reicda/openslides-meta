@@ -14,7 +14,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- MODELS_YML_CHECKSUM = '665a7daf1eac5b0731787068b449e0b4'
+-- MODELS_YML_CHECKSUM = 'e27b9c608b3e6c03917de589385560a2'
 -- Type definitions
 DO $$
 BEGIN
@@ -253,7 +253,7 @@ END$$;
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_group_permissions') THEN
-        CREATE TYPE enum_group_permissions AS ENUM ('agenda_item.can_manage', 'agenda_item.can_see', 'agenda_item.can_see_internal', 'agenda_item.can_manage_moderator_notes', 'agenda_item.can_see_moderator_notes', 'assignment.can_manage', 'assignment.can_nominate_other', 'assignment.can_nominate_self', 'assignment.can_see', 'chat.can_manage', 'list_of_speakers.can_be_speaker', 'list_of_speakers.can_manage', 'list_of_speakers.can_see', 'mediafile.can_manage', 'mediafile.can_see', 'meeting.can_manage_logos_and_fonts', 'meeting.can_manage_settings', 'meeting.can_see_autopilot', 'meeting.can_see_frontpage', 'meeting.can_see_history', 'meeting.can_see_livestream', 'motion.can_create', 'motion.can_create_amendments', 'motion.can_forward', 'motion.can_manage', 'motion.can_manage_metadata', 'motion.can_manage_polls', 'motion.can_see', 'motion.can_see_internal', 'motion.can_support', 'poll.can_manage', 'projector.can_manage', 'projector.can_see', 'tag.can_manage', 'user.can_manage', 'user.can_manage_presence', 'user.can_see');
+        CREATE TYPE enum_group_permissions AS ENUM ('agenda_item.can_manage', 'agenda_item.can_see', 'agenda_item.can_see_internal', 'agenda_item.can_manage_moderator_notes', 'agenda_item.can_see_moderator_notes', 'assignment.can_manage', 'assignment.can_nominate_other', 'assignment.can_nominate_self', 'assignment.can_see', 'chat.can_manage', 'list_of_speakers.can_be_speaker', 'list_of_speakers.can_manage', 'list_of_speakers.can_see', 'mediafile.can_manage', 'mediafile.can_see', 'meeting.can_manage_logos_and_fonts', 'meeting.can_manage_settings', 'meeting.can_see_autopilot', 'meeting.can_see_frontpage', 'meeting.can_see_history', 'meeting.can_see_livestream', 'motion.can_create', 'motion.can_create_amendments', 'motion.can_forward', 'motion.can_manage', 'motion.can_manage_metadata', 'motion.can_manage_polls', 'motion.can_see', 'motion.can_see_internal', 'motion.can_support', 'poll.can_manage', 'projector.can_manage', 'projector.can_see', 'tag.can_manage', 'user.can_manage', 'user.can_manage_presence', 'user.can_see_sensitive_data', 'user.can_see', 'user.can_update');
     ELSE
         RAISE NOTICE 'type "enum_group_permissions" already exists, skipping';
     END IF;
@@ -379,7 +379,7 @@ END$$;
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_import_preview_name') THEN
-        CREATE TYPE enum_import_preview_name AS ENUM ('account', 'participant', 'topic', 'committee');
+        CREATE TYPE enum_import_preview_name AS ENUM ('account', 'participant', 'topic', 'committee', 'motion');
     ELSE
         RAISE NOTICE 'type "enum_import_preview_name" already exists, skipping';
     END IF;
@@ -460,7 +460,6 @@ CREATE TABLE IF NOT EXISTS userT (
     can_change_own_password boolean DEFAULT True,
     gender varchar(256),
     email varchar(256),
-    default_number varchar(256),
     default_vote_weight decimal(6) CONSTRAINT minimum_default_vote_weight CHECK (default_vote_weight >= 0.000001) DEFAULT '1.000000',
     last_email_sent timestamptz,
     is_demo_user boolean,
@@ -632,7 +631,9 @@ CREATE TABLE IF NOT EXISTS meetingT (
     list_of_speakers_show_amount_of_speakers_on_slide boolean DEFAULT True,
     list_of_speakers_present_users_only boolean DEFAULT False,
     list_of_speakers_show_first_contribution boolean DEFAULT False,
+    list_of_speakers_allow_multiple_speakers boolean DEFAULT False,
     list_of_speakers_enable_point_of_order_speakers boolean DEFAULT True,
+    list_of_speakers_can_create_point_of_order_for_others boolean DEFAULT False,
     list_of_speakers_enable_point_of_order_categories boolean DEFAULT False,
     list_of_speakers_closing_disables_point_of_order boolean DEFAULT False,
     list_of_speakers_enable_pro_contra_speech boolean DEFAULT False,

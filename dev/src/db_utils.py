@@ -18,7 +18,7 @@ class DbUtils:
 
     @classmethod
     def insert_many_wrapper(
-        cls, curs: Cursor, table_name: str, data_list: list[dict[str, Any]]
+        cls, curs: Cursor, table_name: str, data_list: list[dict[str, Any]], returning: str = "id"
     ) -> list[int]:
         ids: list[int] = []
         if not data_list:
@@ -32,7 +32,7 @@ class DbUtils:
 
         dates = [temp_data | data for data in data_list]
         query = (
-            f"INSERT INTO {table_name} ({', '.join(keys)}) VALUES({{}}) RETURNING id;"
+            f"INSERT INTO {table_name} ({', '.join(keys)}) VALUES({{}}){' RETURNING ' + returning if returning else ''};"
         )
         query = (
             sql.SQL(query)
@@ -44,11 +44,12 @@ class DbUtils:
         curs.executemany(
             query,
             tuple(tuple(v for _, v in sorted(data.items())) for data in dates),
-            returning=True,
+            returning=bool(returning),
         )
         ids = []
-        while True:
-            ids.append(curs.fetchone()["id"])
-            if not curs.nextset():
-                break
+        if returning:
+            while True:
+                ids.append(curs.fetchone()[returning])
+                if not curs.nextset():
+                    break
         return ids

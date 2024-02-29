@@ -53,6 +53,7 @@ class SubstDict(TypedDict, total=False):
     minimum: str
     minLength: str
     enum_: str
+    deferred: str
 
 
 class GenerateCodeBlocks:
@@ -239,7 +240,9 @@ class GenerateCodeBlocks:
                 text.update(
                     cls.get_schema_simple_types(table_name, fname, fdata, "number")
                 )
-                initially_deferred = ModelsHelper.is_fk_initially_deferred(
+                initially_deferred = fdata.get(
+                    "deferred"
+                ) or ModelsHelper.is_fk_initially_deferred(
                     table_name, foreign_table_field.table
                 )
                 text["alter_table_final"] = (

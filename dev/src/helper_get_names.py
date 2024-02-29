@@ -242,6 +242,6 @@ class InternalHelper:
         if cls.MODELS:
             try:
                 return cls.MODELS[collection][field]
-            except:
+            except KeyError:
                 raise Exception(f"MODELS field {collection}.{field} doesn't exist")
         raise Exception("You have to initialize models in class InternalHelper")

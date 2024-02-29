@@ -20,11 +20,7 @@
 #       relation field in this collection is <field>. E. g. in a motion the field `meeting_id`
 #       `reference: <collection(field1, ...)` This can be used, if the foreign key reference
 #        is not the <collection/"id">, where the collection is the same as that from the `to`.
-#       `category_id` links to one category where the field `motion_ids` contains the
-#       motion id. The simple notation for the field is `motion_category/motion_ids`.
-#       The reverse field has type `relation-list` and is related back to
-#       `motion/category_id`. The type indicates that there are many
-#       motion ids.
+#       `deferred: true`: this field get the "INITIALLY DEFERRED" on it's foreign key definition
 #     - Generic relations: The difference to non-generic relations is that you have a
 #       list of possible fields, so `to` can either hold multiple collections (if the
 #       field name is the same):
@@ -2530,9 +2526,10 @@ motion:
     to: motion/all_origin_ids
     restriction_mode: A
   identical_motion_ids:
-    type: relation-list
-    to: motion/identical_motion_ids
-    equal_fields: meeting_id
+    type: int[]
+    # type relation-list
+    # to: motion/identical_motion_ids
+    description: Changed from relation-list to int[], because can't still be genmerated
     restriction_mode: C
   state_id:
     type: relation
@@ -3127,6 +3124,7 @@ motion_state:
     required: true
     restriction_mode: A
     constant: true
+    deferred: true
 
 motion_workflow:
   id:

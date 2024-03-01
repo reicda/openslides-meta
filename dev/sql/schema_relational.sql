@@ -1566,7 +1566,7 @@ CREATE OR REPLACE VIEW organization AS SELECT *,
 (select array_agg(m.id) from meetingT m where m.template_for_organization_id = o.id) as template_meeting_ids,
 (select array_agg(ot.id) from organization_tagT ot) as organization_tag_ids,
 (select array_agg(t.id) from themeT t) as theme_ids,
-(select array_agg(m.owner_id) from mediafileT m where m.owner_id_organization_id = o.id) as mediafile_ids,
+(select array_agg(m.id) from mediafileT m where m.owner_id_organization_id = o.id) as mediafile_ids,
 (select array_agg(u.id) from userT u) as user_ids
 FROM organizationT o;
 
@@ -1577,7 +1577,7 @@ CREATE OR REPLACE VIEW user_ AS SELECT *,
 (select array_agg(c.id) from committeeT c where c.forwarding_user_id = u.id) as forwarding_committee_ids,
 (select array_agg(m.id) from meeting_userT m where m.user_id = u.id) as meeting_user_ids,
 (select array_agg(n.poll_id) from nm_poll_voted_ids_userT n where n.user_id = u.id) as poll_voted_ids,
-(select array_agg(o.content_object_id) from optionT o where o.content_object_id_user_id = u.id) as option_ids,
+(select array_agg(o.id) from optionT o where o.content_object_id_user_id = u.id) as option_ids,
 (select array_agg(v.id) from voteT v where v.user_id = u.id) as vote_ids,
 (select array_agg(v.id) from voteT v where v.delegated_user_id = u.id) as delegated_vote_ids,
 (select array_agg(p.id) from poll_candidateT p where p.user_id = u.id) as poll_candidate_ids
@@ -1614,7 +1614,7 @@ CREATE OR REPLACE VIEW committee AS SELECT *,
 (select array_agg(n.user_id) from nm_committee_manager_ids_userT n where n.committee_id = c.id) as manager_ids,
 (select array_agg(n.forward_to_committee_id) from nm_committee_forward_to_committee_ids_committeeT n where n.receive_forwardings_from_committee_id = c.id) as forward_to_committee_ids,
 (select array_agg(n.receive_forwardings_from_committee_id) from nm_committee_forward_to_committee_ids_committeeT n where n.forward_to_committee_id = c.id) as receive_forwardings_from_committee_ids,
-(select array_agg(g.tagged_id) from gm_organization_tag_tagged_idsT g where g.tagged_id_committee_id = c.id) as organization_tag_ids
+(select array_agg(g.organization_tag_id) from gm_organization_tag_tagged_idsT g where g.tagged_id_committee_id = c.id) as organization_tag_ids
 FROM committeeT c;
 
 
@@ -1638,7 +1638,7 @@ CREATE OR REPLACE VIEW meeting AS SELECT *,
 (select array_agg(s.id) from speakerT s where s.meeting_id = m.id) as speaker_ids,
 (select array_agg(t.id) from topicT t where t.meeting_id = m.id) as topic_ids,
 (select array_agg(g.id) from groupT g where g.meeting_id = m.id) as group_ids,
-(select array_agg(m1.owner_id) from mediafileT m1 where m1.owner_id_meeting_id = m.id) as mediafile_ids,
+(select array_agg(m1.id) from mediafileT m1 where m1.owner_id_meeting_id = m.id) as mediafile_ids,
 (select array_agg(m1.id) from motionT m1 where m1.meeting_id = m.id) as motion_ids,
 (select array_agg(m1.id) from motionT m1 where m1.origin_meeting_id = m.id) as forwarded_motion_ids,
 (select array_agg(mc.id) from motion_comment_sectionT mc where mc.meeting_id = m.id) as motion_comment_section_ids,
@@ -1662,9 +1662,9 @@ CREATE OR REPLACE VIEW meeting AS SELECT *,
 (select array_agg(c.id) from chat_messageT c where c.meeting_id = m.id) as chat_message_ids,
 (select array_agg(s.id) from structure_levelT s where s.meeting_id = m.id) as structure_level_ids,
 (select c.id from committeeT c where c.default_meeting_id = m.id) as default_meeting_for_committee_id,
-(select array_agg(g.tagged_id) from gm_organization_tag_tagged_idsT g where g.tagged_id_meeting_id = m.id) as organization_tag_ids,
+(select array_agg(g.organization_tag_id) from gm_organization_tag_tagged_idsT g where g.tagged_id_meeting_id = m.id) as organization_tag_ids,
 (select array_agg(n.user_id) from nm_meeting_present_user_ids_userT n where n.meeting_id = m.id) as present_user_ids,
-(select array_agg(p.content_object_id) from projectionT p where p.content_object_id_meeting_id = m.id) as projection_ids
+(select array_agg(p.id) from projectionT p where p.content_object_id_meeting_id = m.id) as projection_ids
 FROM meetingT m;
 
 
@@ -1695,15 +1695,15 @@ FROM tagT t;
 
 CREATE OR REPLACE VIEW agenda_item AS SELECT *,
 (select array_agg(ai.id) from agenda_itemT ai where ai.parent_id = a.id) as child_ids,
-(select array_agg(g.tagged_id) from gm_tag_tagged_idsT g where g.tagged_id_agenda_item_id = a.id) as tag_ids,
-(select array_agg(p.content_object_id) from projectionT p where p.content_object_id_agenda_item_id = a.id) as projection_ids
+(select array_agg(g.tag_id) from gm_tag_tagged_idsT g where g.tagged_id_agenda_item_id = a.id) as tag_ids,
+(select array_agg(p.id) from projectionT p where p.content_object_id_agenda_item_id = a.id) as projection_ids
 FROM agenda_itemT a;
 
 
 CREATE OR REPLACE VIEW list_of_speakers AS SELECT *,
 (select array_agg(s.id) from speakerT s where s.list_of_speakers_id = l.id) as speaker_ids,
 (select array_agg(s.id) from structure_level_list_of_speakersT s where s.list_of_speakers_id = l.id) as structure_level_list_of_speakers_ids,
-(select array_agg(p.content_object_id) from projectionT p where p.content_object_id_list_of_speakers_id = l.id) as projection_ids
+(select array_agg(p.id) from projectionT p where p.content_object_id_list_of_speakers_id = l.id) as projection_ids
 FROM list_of_speakersT l;
 
 
@@ -1718,11 +1718,11 @@ FROM point_of_order_categoryT p;
 
 
 CREATE OR REPLACE VIEW topic AS SELECT *,
-(select array_agg(g.attachment_id) from gm_mediafile_attachment_idsT g where g.attachment_id_topic_id = t.id) as attachment_ids,
+(select array_agg(g.mediafile_id) from gm_mediafile_attachment_idsT g where g.attachment_id_topic_id = t.id) as attachment_ids,
 (select a.id from agenda_itemT a where a.content_object_id_topic_id = t.id) as agenda_item_id,
 (select l.id from list_of_speakersT l where l.content_object_id_topic_id = t.id) as list_of_speakers_id,
-(select array_agg(p.content_object_id) from pollT p where p.content_object_id_topic_id = t.id) as poll_ids,
-(select array_agg(p.content_object_id) from projectionT p where p.content_object_id_topic_id = t.id) as projection_ids
+(select array_agg(p.id) from pollT p where p.content_object_id_topic_id = t.id) as poll_ids,
+(select array_agg(p.id) from projectionT p where p.content_object_id_topic_id = t.id) as projection_ids
 FROM topicT t;
 
 
@@ -1733,23 +1733,23 @@ CREATE OR REPLACE VIEW motion AS SELECT *,
 (select array_agg(n.all_origin_id) from nm_motion_all_derived_motion_ids_motionT n where n.all_derived_motion_id = m.id) as all_origin_ids,
 (select array_agg(n.all_derived_motion_id) from nm_motion_all_derived_motion_ids_motionT n where n.all_origin_id = m.id) as all_derived_motion_ids,
 (select array_agg(g.id) from gm_motion_state_extension_reference_idsT g where g.motion_id = m.id) as state_extension_reference_ids,
-(select array_agg(g.state_extension_reference_id) from gm_motion_state_extension_reference_idsT g where g.state_extension_reference_id_motion_id = m.id) as referenced_in_motion_state_extension_ids,
+(select array_agg(g.motion_id) from gm_motion_state_extension_reference_idsT g where g.state_extension_reference_id_motion_id = m.id) as referenced_in_motion_state_extension_ids,
 (select array_agg(g.id) from gm_motion_recommendation_extension_reference_idsT g where g.motion_id = m.id) as recommendation_extension_reference_ids,
-(select array_agg(g.recommendation_extension_reference_id) from gm_motion_recommendation_extension_reference_idsT g where g.recommendation_extension_reference_id_motion_id = m.id) as referenced_in_motion_recommendation_extension_ids,
+(select array_agg(g.motion_id) from gm_motion_recommendation_extension_reference_idsT g where g.recommendation_extension_reference_id_motion_id = m.id) as referenced_in_motion_recommendation_extension_ids,
 (select array_agg(ms.id) from motion_submitterT ms where ms.motion_id = m.id) as submitter_ids,
 (select array_agg(n.meeting_user_id) from nm_meeting_user_supported_motion_ids_motionT n where n.motion_id = m.id) as supporter_meeting_user_ids,
 (select array_agg(me.id) from motion_editorT me where me.motion_id = m.id) as editor_ids,
 (select array_agg(mw.id) from motion_working_group_speakerT mw where mw.motion_id = m.id) as working_group_speaker_ids,
-(select array_agg(p.content_object_id) from pollT p where p.content_object_id_motion_id = m.id) as poll_ids,
-(select array_agg(o.content_object_id) from optionT o where o.content_object_id_motion_id = m.id) as option_ids,
+(select array_agg(p.id) from pollT p where p.content_object_id_motion_id = m.id) as poll_ids,
+(select array_agg(o.id) from optionT o where o.content_object_id_motion_id = m.id) as option_ids,
 (select array_agg(mc.id) from motion_change_recommendationT mc where mc.motion_id = m.id) as change_recommendation_ids,
 (select array_agg(mc.id) from motion_commentT mc where mc.motion_id = m.id) as comment_ids,
 (select a.id from agenda_itemT a where a.content_object_id_motion_id = m.id) as agenda_item_id,
 (select l.id from list_of_speakersT l where l.content_object_id_motion_id = m.id) as list_of_speakers_id,
-(select array_agg(g.tagged_id) from gm_tag_tagged_idsT g where g.tagged_id_motion_id = m.id) as tag_ids,
-(select array_agg(g.attachment_id) from gm_mediafile_attachment_idsT g where g.attachment_id_motion_id = m.id) as attachment_ids,
-(select array_agg(p.content_object_id) from projectionT p where p.content_object_id_motion_id = m.id) as projection_ids,
-(select array_agg(p.content_object_id) from personal_noteT p where p.content_object_id_motion_id = m.id) as personal_note_ids
+(select array_agg(g.tag_id) from gm_tag_tagged_idsT g where g.tagged_id_motion_id = m.id) as tag_ids,
+(select array_agg(g.mediafile_id) from gm_mediafile_attachment_idsT g where g.attachment_id_motion_id = m.id) as attachment_ids,
+(select array_agg(p.id) from projectionT p where p.content_object_id_motion_id = m.id) as projection_ids,
+(select array_agg(p.id) from personal_noteT p where p.content_object_id_motion_id = m.id) as personal_note_ids
 FROM motionT m;
 
 
@@ -1770,7 +1770,7 @@ CREATE OR REPLACE VIEW motion_block AS SELECT *,
 (select array_agg(m1.id) from motionT m1 where m1.block_id = m.id) as motion_ids,
 (select a.id from agenda_itemT a where a.content_object_id_motion_block_id = m.id) as agenda_item_id,
 (select l.id from list_of_speakersT l where l.content_object_id_motion_block_id = m.id) as list_of_speakers_id,
-(select array_agg(p.content_object_id) from projectionT p where p.content_object_id_motion_block_id = m.id) as projection_ids
+(select array_agg(p.id) from projectionT p where p.content_object_id_motion_block_id = m.id) as projection_ids
 FROM motion_blockT m;
 
 
@@ -1801,7 +1801,7 @@ CREATE OR REPLACE VIEW poll AS SELECT *,
 (select array_agg(o.id) from optionT o where o.poll_id = p.id) as option_ids,
 (select array_agg(n.user_id) from nm_poll_voted_ids_userT n where n.poll_id = p.id) as voted_ids,
 (select array_agg(n.group_id) from nm_group_poll_ids_pollT n where n.poll_id = p.id) as entitled_group_ids,
-(select array_agg(p1.content_object_id) from projectionT p1 where p1.content_object_id_poll_id = p.id) as projection_ids
+(select array_agg(p1.id) from projectionT p1 where p1.content_object_id_poll_id = p.id) as projection_ids
 FROM pollT p;
 
 
@@ -1813,12 +1813,12 @@ FROM optionT o;
 
 CREATE OR REPLACE VIEW assignment AS SELECT *,
 (select array_agg(ac.id) from assignment_candidateT ac where ac.assignment_id = a.id) as candidate_ids,
-(select array_agg(p.content_object_id) from pollT p where p.content_object_id_assignment_id = a.id) as poll_ids,
+(select array_agg(p.id) from pollT p where p.content_object_id_assignment_id = a.id) as poll_ids,
 (select ai.id from agenda_itemT ai where ai.content_object_id_assignment_id = a.id) as agenda_item_id,
 (select l.id from list_of_speakersT l where l.content_object_id_assignment_id = a.id) as list_of_speakers_id,
-(select array_agg(g.tagged_id) from gm_tag_tagged_idsT g where g.tagged_id_assignment_id = a.id) as tag_ids,
-(select array_agg(g.attachment_id) from gm_mediafile_attachment_idsT g where g.attachment_id_assignment_id = a.id) as attachment_ids,
-(select array_agg(p.content_object_id) from projectionT p where p.content_object_id_assignment_id = a.id) as projection_ids
+(select array_agg(g.tag_id) from gm_tag_tagged_idsT g where g.tagged_id_assignment_id = a.id) as tag_ids,
+(select array_agg(g.mediafile_id) from gm_mediafile_attachment_idsT g where g.attachment_id_assignment_id = a.id) as attachment_ids,
+(select array_agg(p.id) from projectionT p where p.content_object_id_assignment_id = a.id) as projection_ids
 FROM assignmentT a;
 
 
@@ -1833,7 +1833,7 @@ CREATE OR REPLACE VIEW mediafile AS SELECT *,
 (select array_agg(n.group_id) from nm_group_mediafile_access_group_ids_mediafileT n where n.mediafile_id = m.id) as access_group_ids,
 (select array_agg(m1.id) from mediafileT m1 where m1.parent_id = m.id) as child_ids,
 (select l.id from list_of_speakersT l where l.content_object_id_mediafile_id = m.id) as list_of_speakers_id,
-(select array_agg(p.content_object_id) from projectionT p where p.content_object_id_mediafile_id = m.id) as projection_ids,
+(select array_agg(p.id) from projectionT p where p.content_object_id_mediafile_id = m.id) as projection_ids,
 (select array_agg(g.id) from gm_mediafile_attachment_idsT g where g.mediafile_id = m.id) as attachment_ids,
 (select m1.id from meetingT m1 where m1.logo_projector_main_id = m.id) as used_as_logo_projector_main_in_meeting_id,
 (select m1.id from meetingT m1 where m1.logo_projector_header_id = m.id) as used_as_logo_projector_header_in_meeting_id,
@@ -1863,12 +1863,12 @@ FROM projectorT p;
 
 
 CREATE OR REPLACE VIEW projector_message AS SELECT *,
-(select array_agg(p1.content_object_id) from projectionT p1 where p1.content_object_id_projector_message_id = p.id) as projection_ids
+(select array_agg(p1.id) from projectionT p1 where p1.content_object_id_projector_message_id = p.id) as projection_ids
 FROM projector_messageT p;
 
 
 CREATE OR REPLACE VIEW projector_countdown AS SELECT *,
-(select array_agg(p1.content_object_id) from projectionT p1 where p1.content_object_id_projector_countdown_id = p.id) as projection_ids,
+(select array_agg(p1.id) from projectionT p1 where p1.content_object_id_projector_countdown_id = p.id) as projection_ids,
 (select m.id from meetingT m where m.list_of_speakers_countdown_id = p.id) as used_as_list_of_speakers_countdown_meeting_id,
 (select m.id from meetingT m where m.poll_countdown_id = p.id) as used_as_poll_countdown_meeting_id
 FROM projector_countdownT p;
@@ -2083,7 +2083,7 @@ Field Attributes:Field Attributes opposite side
     t: "to" defined
     r: "reference" defined
     s: sql directive given, but must be generated
-    s+: sql directive includive sql-statement
+    s+: sql directive inclusive sql-statement
     R: Required
 Model.Field -> Model.Field
     model.field names

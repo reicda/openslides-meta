@@ -51,6 +51,7 @@ class TableFieldType:
 class HelperGetNames:
     MAX_LEN = 63
 
+    @staticmethod
     def max_length(func: Callable) -> Callable:
         def wrapper(*args, **kwargs) -> str:  # type:ignore
             name = func(*args, **kwargs)

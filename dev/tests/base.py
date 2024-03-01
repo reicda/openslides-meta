@@ -17,6 +17,22 @@ class BaseTestCase(TestCase):
     work_on_test_db = "openslides_test"
     db_connection: psycopg.Connection = None
 
+    # id's of pre loaded rows, see method populate_database
+    meeting1_id= 0
+    theme1_id = 0
+    organization_id = 0
+    user1_id = 0
+    committee1_id = 0
+    meeting1_id = 0
+    group_m1_ids = [0,0,0,0,0] # default, admin, staff, committees, delegates
+    projector_m1_ids = [0,0]
+    workflow_m1_simple_id = 0
+    workflow_m1_complex_id = 0
+    wf_m1_simple_motion_state_ids = [1, 2, 3, 4]
+    wf_m1_complex_motion_state_ids = [1, 2, 3, 4]
+    wf_m1_simple_first_state_id = 0
+    wf_m1_complex_first_state_id = 0
+
     @classmethod
     def set_db_connection(cls, db_name:str, autocommit:bool = False, row_factory:callable = psycopg.rows.dict_row) -> None:
         env = os.environ
@@ -69,13 +85,13 @@ class BaseTestCase(TestCase):
         """ do something like setting initial_data.json"""
         with cls.db_connection.transaction():
             with cls.db_connection.cursor() as curs:
-                theme_id = DbUtils.insert_wrapper(curs, "themeT", {
+                cls.theme1_id = DbUtils.insert_wrapper(curs, "themeT", {
                     "name": "OpenSlides Blue",
                     "accent_500": int("0x2196f3", 16),
                     "primary_500": int("0x317796", 16),
                     "warn_500": int("0xf06400", 16),
                 })
-                organization_id = DbUtils.insert_wrapper(curs, "organizationT", {
+                cls.organization_id = DbUtils.insert_wrapper(curs, "organizationT", {
                     "name": "Test Organization",
                     "legal_notice": "<a href=\"http://www.openslides.org\">OpenSlides</a> is a free web based presentation and assembly system for visualizing and controlling agenda, motions and elections of an assembly.",
                     "login_text": "Good Morning!",
@@ -86,7 +102,7 @@ class BaseTestCase(TestCase):
                     "reset_password_verbose_errors": True,
                     "limit_of_meetings": 0,
                     "limit_of_users": 0,
-                    "theme_id": theme_id,
+                    "theme_id": cls.theme1_id,
                     "users_email_sender": "OpenSlides",
                     "users_email_subject": "OpenSlides access data",
                     "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically.",
@@ -105,7 +121,7 @@ class BaseTestCase(TestCase):
                         "is_physical_person": "is_person"
                     })
                 })
-                user_id = DbUtils.insert_wrapper(curs, "userT", {
+                cls.user1_id = DbUtils.insert_wrapper(curs, "userT", {
                     "username": "admin",
                     "last_name": "Administrator",
                     "is_active": True,
@@ -117,12 +133,12 @@ class BaseTestCase(TestCase):
                     "default_vote_weight": "1.000000",
                     "organization_management_level": "superadmin",
                 })
-                committee_id = DbUtils.insert_wrapper(curs, "committeeT", {
+                cls.committee1_id = DbUtils.insert_wrapper(curs, "committeeT", {
                     "name": "Default committee",
                     "description": "Add description here",
                 })
-                meeting_id = curs.execute("select nextval(pg_get_serial_sequence('meetingT', 'id')) as new_id;").fetchone()["new_id"]
-                group_ids = DbUtils.insert_many_wrapper(curs, "groupT", [
+                cls.meeting1_id = curs.execute("select nextval(pg_get_serial_sequence('meetingT', 'id')) as new_id;").fetchone()["new_id"]
+                cls.group_m1_ids = DbUtils.insert_many_wrapper(curs, "groupT", [
                     {
                         "name": "Default",
                         "permissions": [
@@ -136,13 +152,13 @@ class BaseTestCase(TestCase):
                             "user.can_see"
                         ],
                         "weight": 1,
-                        "meeting_id": meeting_id
+                        "meeting_id": cls.meeting1_id
                     },
                     {
                         "name": "Admin",
                         "permissions": [],
                         "weight": 2,
-                        "meeting_id": meeting_id
+                        "meeting_id": cls.meeting1_id
                     },
                     {
                         "name": "Staff",
@@ -162,7 +178,7 @@ class BaseTestCase(TestCase):
                             "user.can_manage"
                         ],
                         "weight": 3,
-                        "meeting_id": meeting_id
+                        "meeting_id": cls.meeting1_id
                     },
                     {
                         "name": "Committees",
@@ -179,7 +195,7 @@ class BaseTestCase(TestCase):
                             "user.can_see"
                         ],
                         "weight": 4,
-                        "meeting_id": meeting_id
+                        "meeting_id": cls.meeting1_id
                     },
                     {
                         "name": "Delegates",
@@ -198,10 +214,10 @@ class BaseTestCase(TestCase):
                             "user.can_see"
                         ],
                         "weight": 5,
-                        "meeting_id": meeting_id
+                        "meeting_id": cls.meeting1_id
                     }
                 ])
-                projector_ids = DbUtils.insert_many_wrapper(curs, "projectorT", [
+                cls.projector_m1_ids = DbUtils.insert_many_wrapper(curs, "projectorT", [
                     {
                         "name": "Default projector",
                         "is_internal": False,
@@ -222,7 +238,7 @@ class BaseTestCase(TestCase):
                         "show_logo": True,
                         "show_clock": True,
                         "sequential_number": 1,
-                        "meeting_id": meeting_id
+                        "meeting_id": cls.meeting1_id
                     },
                     {
                         "name": "Nebenprojektor",
@@ -244,12 +260,12 @@ class BaseTestCase(TestCase):
                         "show_logo": True,
                         "show_clock": True,
                         "sequential_number": 2,
-                        "meeting_id": meeting_id
+                        "meeting_id": cls.meeting1_id
                     }
                 ])
-                workflow_simple_id = curs.execute("select nextval(pg_get_serial_sequence('motion_workflowT', 'id')) as new_id;").fetchone()["new_id"]
-                workflow_complex_id = curs.execute("select nextval(pg_get_serial_sequence('motion_workflowT', 'id')) as new_id;").fetchone()["new_id"]
-                wf_simple_motion_state_ids = DbUtils.insert_many_wrapper(curs, "motion_stateT", [
+                cls.workflow_m1_simple_id = curs.execute("select nextval(pg_get_serial_sequence('motion_workflowT', 'id')) as new_id;").fetchone()["new_id"]
+                cls.workflow_m1_complex_id = curs.execute("select nextval(pg_get_serial_sequence('motion_workflowT', 'id')) as new_id;").fetchone()["new_id"]
+                cls.wf_m1_simple_motion_state_ids = DbUtils.insert_many_wrapper(curs, "motion_stateT", [
                     {
                         "name": "submitted",
                         "weight": 1,
@@ -259,13 +275,13 @@ class BaseTestCase(TestCase):
                         "allow_submitter_edit": True,
                         "set_number": True,
                         "merge_amendment_into_final": "undefined",
-                        "workflow_id": workflow_simple_id,
+                        "workflow_id": cls.workflow_m1_simple_id,
                         "restrictions": [],
                         "show_state_extension_field": False,
                         "show_recommendation_extension_field": False,
                         "set_workflow_timestamp": True,
                         "allow_motion_forwarding": True,
-                        "meeting_id": meeting_id
+                        "meeting_id": cls.meeting1_id
                     },
                     {
                         "name": "accepted",
@@ -274,7 +290,7 @@ class BaseTestCase(TestCase):
                         "css_class": "green",
                         "set_number": True,
                         "merge_amendment_into_final": "undefined",
-                        "workflow_id": workflow_simple_id,
+                        "workflow_id": cls.workflow_m1_simple_id,
                         "restrictions": [],
                         "show_state_extension_field": False,
                         "show_recommendation_extension_field": False,
@@ -283,7 +299,7 @@ class BaseTestCase(TestCase):
                         "allow_support": False,
                         "set_workflow_timestamp": False,
                         "allow_motion_forwarding": True,
-                        "meeting_id": meeting_id
+                        "meeting_id": cls.meeting1_id
                     },
                     {
                         "name": "rejected",
@@ -292,7 +308,7 @@ class BaseTestCase(TestCase):
                         "css_class": "red",
                         "set_number": True,
                         "merge_amendment_into_final": "undefined",
-                        "workflow_id": workflow_simple_id,
+                        "workflow_id": cls.workflow_m1_simple_id,
                         "restrictions": [],
                         "show_state_extension_field": False,
                         "show_recommendation_extension_field": False,
@@ -301,7 +317,7 @@ class BaseTestCase(TestCase):
                         "allow_support": False,
                         "allow_motion_forwarding": True,
                         "set_workflow_timestamp": False,
-                        "meeting_id": meeting_id
+                        "meeting_id": cls.meeting1_id
                     },
                     {
                         "name": "not decided",
@@ -310,7 +326,7 @@ class BaseTestCase(TestCase):
                         "css_class": "grey",
                         "set_number": True,
                         "merge_amendment_into_final": "undefined",
-                        "workflow_id": workflow_simple_id,
+                        "workflow_id": cls.workflow_m1_simple_id,
                         "restrictions": [],
                         "show_state_extension_field": False,
                         "show_recommendation_extension_field": False,
@@ -319,11 +335,11 @@ class BaseTestCase(TestCase):
                         "allow_support": False,
                         "allow_motion_forwarding": True,
                         "set_workflow_timestamp": False,
-                        "meeting_id": meeting_id
+                        "meeting_id": cls.meeting1_id
                     },
                 ])
-                wf_simple_first_state_id = wf_simple_motion_state_ids[0]
-                wf_complex_motion_state_ids = DbUtils.insert_many_wrapper(curs, "motion_stateT", [
+                cls.wf_m1_simple_first_state_id = cls.wf_m1_simple_motion_state_ids[0]
+                cls.wf_m1_complex_motion_state_ids = DbUtils.insert_many_wrapper(curs, "motion_stateT", [
                     {
                         "name": "in progress",
                         "weight": 5,
@@ -331,7 +347,7 @@ class BaseTestCase(TestCase):
                         "set_number": False,
                         "allow_submitter_edit": True,
                         "merge_amendment_into_final": "undefined",
-                        "workflow_id": workflow_complex_id,
+                        "workflow_id": cls.workflow_m1_complex_id,
                         "restrictions": [],
                         "show_state_extension_field": False,
                         "show_recommendation_extension_field": False,
@@ -339,7 +355,7 @@ class BaseTestCase(TestCase):
                         "allow_support": False,
                         "set_workflow_timestamp": True,
                         "allow_motion_forwarding": True,
-                        "meeting_id": meeting_id
+                        "meeting_id": cls.meeting1_id
                     },
                     {
                         "name": "submitted",
@@ -347,7 +363,7 @@ class BaseTestCase(TestCase):
                         "css_class": "lightblue",
                         "set_number": False,
                         "merge_amendment_into_final": "undefined",
-                        "workflow_id": workflow_complex_id,
+                        "workflow_id": cls.workflow_m1_complex_id,
                         "restrictions": [],
                         "show_state_extension_field": False,
                         "show_recommendation_extension_field": False,
@@ -356,7 +372,7 @@ class BaseTestCase(TestCase):
                         "allow_support": True,
                         "allow_motion_forwarding": True,
                         "set_workflow_timestamp": False,
-                        "meeting_id": meeting_id
+                        "meeting_id": cls.meeting1_id
                     },
                     {
                         "name": "permitted",
@@ -365,7 +381,7 @@ class BaseTestCase(TestCase):
                         "css_class": "lightblue",
                         "set_number": True,
                         "merge_amendment_into_final": "undefined",
-                        "workflow_id": workflow_complex_id,
+                        "workflow_id": cls.workflow_m1_complex_id,
                         "restrictions": [],
                         "show_state_extension_field": False,
                         "show_recommendation_extension_field": False,
@@ -383,7 +399,7 @@ class BaseTestCase(TestCase):
                         "css_class": "green",
                         "set_number": True,
                         "merge_amendment_into_final": "do_merge",
-                        "workflow_id": workflow_complex_id,
+                        "workflow_id": cls.workflow_m1_complex_id,
                         "restrictions": [],
                         "show_state_extension_field": False,
                         "show_recommendation_extension_field": False,
@@ -392,7 +408,7 @@ class BaseTestCase(TestCase):
                         "allow_support": False,
                         "allow_motion_forwarding": True,
                         "set_workflow_timestamp": False,
-                        "meeting_id": meeting_id
+                        "meeting_id": cls.meeting1_id
                     },
                     {
                         "name": "rejected",
@@ -401,7 +417,7 @@ class BaseTestCase(TestCase):
                         "css_class": "red",
                         "set_number": True,
                         "merge_amendment_into_final": "do_not_merge",
-                        "workflow_id": 2,
+                        "workflow_id": cls.workflow_m1_complex_id,
                         "restrictions": [],
                         "show_state_extension_field": False,
                         "show_recommendation_extension_field": False,
@@ -410,7 +426,7 @@ class BaseTestCase(TestCase):
                         "allow_support": False,
                         "allow_motion_forwarding": True,
                         "set_workflow_timestamp": False,
-                        "meeting_id": meeting_id
+                        "meeting_id": cls.meeting1_id
                     },
                     {
                         "name": "withdrawn",
@@ -418,7 +434,7 @@ class BaseTestCase(TestCase):
                         "css_class": "grey",
                         "set_number": True,
                         "merge_amendment_into_final": "do_not_merge",
-                        "workflow_id": workflow_complex_id,
+                        "workflow_id": cls.workflow_m1_complex_id,
                         "restrictions": [],
                         "show_state_extension_field": False,
                         "show_recommendation_extension_field": False,
@@ -427,7 +443,7 @@ class BaseTestCase(TestCase):
                         "allow_support": False,
                         "allow_motion_forwarding": True,
                         "set_workflow_timestamp": False,
-                        "meeting_id": meeting_id
+                        "meeting_id": cls.meeting1_id
                     },
                     {
                         "name": "adjourned",
@@ -436,7 +452,7 @@ class BaseTestCase(TestCase):
                         "css_class": "grey",
                         "set_number": True,
                         "merge_amendment_into_final": "do_not_merge",
-                        "workflow_id": workflow_complex_id,
+                        "workflow_id": cls.workflow_m1_complex_id,
                         "restrictions": [],
                         "show_state_extension_field": False,
                         "show_recommendation_extension_field": False,
@@ -445,7 +461,7 @@ class BaseTestCase(TestCase):
                         "allow_support": False,
                         "allow_motion_forwarding": True,
                         "set_workflow_timestamp": False,
-                        "meeting_id": meeting_id
+                        "meeting_id": cls.meeting1_id
                     },
                     {
                         "name": "not concerned",
@@ -454,7 +470,7 @@ class BaseTestCase(TestCase):
                         "css_class": "grey",
                         "set_number": True,
                         "merge_amendment_into_final": "do_not_merge",
-                        "workflow_id": workflow_complex_id,
+                        "workflow_id": cls.workflow_m1_complex_id,
                         "restrictions": [],
                         "show_state_extension_field": False,
                         "show_recommendation_extension_field": False,
@@ -463,7 +479,7 @@ class BaseTestCase(TestCase):
                         "allow_support": False,
                         "allow_motion_forwarding": True,
                         "set_workflow_timestamp": False,
-                        "meeting_id": meeting_id
+                        "meeting_id": cls.meeting1_id
                     },
                     {
                         "name": "referred to committee",
@@ -472,7 +488,7 @@ class BaseTestCase(TestCase):
                         "css_class": "grey",
                         "set_number": True,
                         "merge_amendment_into_final": "do_not_merge",
-                        "workflow_id": workflow_complex_id,
+                        "workflow_id": cls.workflow_m1_complex_id,
                         "restrictions": [],
                         "show_state_extension_field": False,
                         "show_recommendation_extension_field": False,
@@ -481,7 +497,7 @@ class BaseTestCase(TestCase):
                         "allow_support": False,
                         "allow_motion_forwarding": True,
                         "set_workflow_timestamp": False,
-                        "meeting_id": meeting_id
+                        "meeting_id": cls.meeting1_id
                     },
                     {
                         "name": "needs review",
@@ -489,7 +505,7 @@ class BaseTestCase(TestCase):
                         "css_class": "grey",
                         "set_number": True,
                         "merge_amendment_into_final": "do_not_merge",
-                        "workflow_id": workflow_complex_id,
+                        "workflow_id": cls.workflow_m1_complex_id,
                         "restrictions": [],
                         "show_state_extension_field": False,
                         "show_recommendation_extension_field": False,
@@ -498,7 +514,7 @@ class BaseTestCase(TestCase):
                         "allow_support": False,
                         "allow_motion_forwarding": True,
                         "set_workflow_timestamp": False,
-                        "meeting_id": meeting_id
+                        "meeting_id": cls.meeting1_id
                     },
                     {
                         "name": "rejected (not authorized)",
@@ -507,7 +523,7 @@ class BaseTestCase(TestCase):
                         "css_class": "grey",
                         "set_number": True,
                         "merge_amendment_into_final": "do_not_merge",
-                        "workflow_id": workflow_complex_id,
+                        "workflow_id": cls.workflow_m1_complex_id,
                         "restrictions": [],
                         "show_state_extension_field": False,
                         "show_recommendation_extension_field": False,
@@ -516,10 +532,10 @@ class BaseTestCase(TestCase):
                         "allow_support": False,
                         "allow_motion_forwarding": True,
                         "set_workflow_timestamp": False,
-                        "meeting_id": 1
+                        "meeting_id": cls.meeting1_id
                     },
                 ])
-                wf_complex_first_state_id = wf_complex_motion_state_ids[0]
+                cls.wf_m1_complex_first_state_id = cls.wf_m1_complex_motion_state_ids[0]
 
                 DbUtils.insert_many_wrapper(curs, "nm_motion_state_next_state_ids_motion_stateT", 
                     [
@@ -539,34 +555,34 @@ class BaseTestCase(TestCase):
                         {"next_state_id": 13, "previous_state_id": 7},
                         {"next_state_id": 14, "previous_state_id": 7},
                     ], returning='')
-                assert [workflow_simple_id, workflow_complex_id] == DbUtils.insert_many_wrapper(curs, "motion_workflowT",
+                assert [cls.workflow_m1_simple_id, cls.workflow_m1_complex_id] == DbUtils.insert_many_wrapper(curs, "motion_workflowT",
                     [
                         {
-                            "id": workflow_simple_id,
+                            "id": cls.workflow_m1_simple_id,
                             "name": "Simple Workflow",
                             "sequential_number": 1,
-                            "first_state_id": wf_simple_first_state_id,
-                            "meeting_id": 1
+                            "first_state_id": cls.wf_m1_simple_first_state_id,
+                            "meeting_id": cls.meeting1_id
                         },
                         {
-                            "id": workflow_complex_id,
+                            "id": cls.workflow_m1_complex_id,
                             "name": "Complex Workflow",
                             "sequential_number": 2,
-                            "first_state_id": wf_complex_first_state_id,
-                            "meeting_id": 1
+                            "first_state_id": cls.wf_m1_complex_first_state_id,
+                            "meeting_id": cls.meeting1_id
                         }
                     ]
                 )
                 assert 1 == DbUtils.insert_wrapper(curs, "meetingT", {
-                    "id": meeting_id,
+                    "id": cls.meeting1_id,
                     "name": "OpenSlides Demo",
-                    "is_active_in_organization_id": organization_id,
+                    "is_active_in_organization_id": cls.organization_id,
                     "language": "en",
                     "conference_los_restriction": True,
                     "agenda_number_prefix": "TOP",
-                    "motions_default_workflow_id": workflow_simple_id,
-                    "motions_default_amendment_workflow_id": workflow_complex_id,
-                    "motions_default_statute_amendment_workflow_id": workflow_complex_id,
+                    "motions_default_workflow_id": cls.workflow_m1_simple_id,
+                    "motions_default_amendment_workflow_id": cls.workflow_m1_complex_id,
+                    "motions_default_statute_amendment_workflow_id": cls.workflow_m1_complex_id,
                     "motions_recommendations_by": "ABK",
                     "motions_statute_recommendations_by": "",
                     "motions_statutes_enabled": True,
@@ -583,8 +599,8 @@ class BaseTestCase(TestCase):
                     "poll_default_type": "nominal",
                     "poll_default_method": "votes",
                     "poll_default_onehundred_percent_base": "valid",
-                    "committee_id": committee_id,
-                    "reference_projector_id": projector_ids[0],
+                    "committee_id": cls.committee1_id,
+                    "reference_projector_id": cls.projector_m1_ids[0],
                     # Fields still not generated, required relation_list not implemented
                     # "default_projector_agenda_item_list_ids": [projector_ids[0]],
                     # "default_projector_topic_ids": [projector_ids[0]],
@@ -600,7 +616,7 @@ class BaseTestCase(TestCase):
                     # "default_projector_assignment_poll_ids": [projector_ids[0]],
                     # "default_projector_motion_poll_ids": [projector_ids[0]],
                     # "default_projector_poll_ids": [projector_ids[0]],
-                    "default_group_id": group_ids[0],
-                    "admin_group_id": group_ids[1]
+                    "default_group_id": cls.group_m1_ids[0],
+                    "admin_group_id": cls.group_m1_ids[1]
                 })
-                curs.execute("UPDATE committeeT SET default_meeting_id = %s where id = %s;", (meeting_id, committee_id))
+                curs.execute("UPDATE committeeT SET default_meeting_id = %s where id = %s;", (cls.meeting1_id, cls.committee1_id))

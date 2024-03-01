@@ -346,7 +346,7 @@ class GenerateCodeBlocks:
                             f"_{table_name}_{foreign_table_field.ref_column}"
                         )
                         foreign_table_name = foreign_table_field.table
-                        foreign_table_ref_column = foreign_table_field.column
+                        foreign_table_ref_column = foreign_table_field.ref_column
                     elif type_ == "relation-list":
                         if own_table_field.table == foreign_table_field.table:
                             """Example: committee.forward_to_committee_ids to committee.receive_forwardings_from_committee_ids"""
@@ -367,7 +367,7 @@ class GenerateCodeBlocks:
                             )
                     elif type_ == "generic-relation-list":
                         own_ref_column = own_table_field.ref_column
-                        foreign_table_ref_column = foreign_table_field.column[:-1]
+                        foreign_table_ref_column = f"{foreign_table_field.table}_{foreign_table_field.ref_column}"
                         foreign_table_name = HelperGetNames.get_gm_table_name(
                             foreign_table_field
                         )
@@ -623,7 +623,7 @@ class Helper:
             t: "to" defined
             r: "reference" defined
             s: sql directive given, but must be generated
-            s+: sql directive includive sql-statement
+            s+: sql directive inclusive sql-statement
             R: Required
         Model.Field -> Model.Field
             model.field names

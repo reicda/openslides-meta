@@ -18,7 +18,11 @@ class DbUtils:
 
     @classmethod
     def insert_many_wrapper(
-        cls, curs: Cursor, table_name: str, data_list: list[dict[str, Any]], returning: str = "id"
+        cls,
+        curs: Cursor,
+        table_name: str,
+        data_list: list[dict[str, Any]],
+        returning: str = "id",
     ) -> list[int]:
         ids: list[int] = []
         if not data_list:
@@ -31,9 +35,7 @@ class DbUtils:
         temp_data = {k: None for k in keys}
 
         dates = [temp_data | data for data in data_list]
-        query = (
-            f"INSERT INTO {table_name} ({', '.join(keys)}) VALUES({{}}){' RETURNING ' + returning if returning else ''};"
-        )
+        query = f"INSERT INTO {table_name} ({', '.join(keys)}) VALUES({{}}){' RETURNING ' + returning if returning else ''};"
         query = (
             sql.SQL(query)
             .format(
@@ -53,3 +55,20 @@ class DbUtils:
                 if not curs.nextset():
                     break
         return ids
+
+    @classmethod
+    def select_id_wrapper(
+        cls,
+        curs: Cursor,
+        table_name: str,
+        id_: int | None = None,
+        field_names: list[str] = [],
+    ) -> dict[str, Any] | list[dict[str, Any]]:
+        """select with single id or all for fields in list or all fields"""
+        query = sql.SQL(
+            f"SELECT {', '.join(field_names) if field_names else '*'} FROM {table_name}{' where id = %s' if id_ else ''}"
+        )
+        if id_:
+            return curs.execute(query, (id_,)).fetchone()
+        else:
+            return curs.execute(query).fetchall()

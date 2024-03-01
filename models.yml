@@ -272,10 +272,7 @@ user:
     restriction_mode: A
   email:
     type: string
-    restriction_mode: E
-  default_number:
-    type: string
-    restriction_mode: A
+    restriction_mode: B
   default_vote_weight:
     type: decimal(6)
     default: "1.000000"
@@ -1014,9 +1011,17 @@ meeting:
     type: boolean
     default: False
     restriction_mode: B
+  list_of_speakers_allow_multiple_speakers:
+    type: boolean
+    default: False
+    restriction_mode: B
   list_of_speakers_enable_point_of_order_speakers:
     type: boolean
     default: True
+    restriction_mode: B
+  list_of_speakers_can_create_point_of_order_for_others:
+    type: boolean
+    default: False
     restriction_mode: B
   list_of_speakers_enable_point_of_order_categories:
     type: boolean
@@ -1919,7 +1924,9 @@ group:
         - tag.can_manage
         - user.can_manage
         - user.can_manage_presence
+        - user.can_see_sensitive_data
         - user.can_see
+        - user.can_update
     restriction_mode: A
   weight:
     type: number
@@ -2595,11 +2602,13 @@ motion:
   editor_ids:
     type: relation-list
     to: motion_editor/motion_id
+    on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: B
   working_group_speaker_ids:
     type: relation-list
     to: motion_working_group_speaker/motion_id
+    on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: B
   poll_ids:
@@ -4237,6 +4246,7 @@ import_preview:
       - participant
       - topic
       - committee
+      - motion
     restriction_mode: A
   state:
     type: string

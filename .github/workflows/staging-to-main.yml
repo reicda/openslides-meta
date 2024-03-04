@@ -51,4 +51,4 @@ jobs:
         reviewers: ${{ github.event.commits[0].author.username }}
         assignees: ${{ github.event.commits[0].author.username }}
         labels: staging-port
-        milestone: 4
+        milestone: 1

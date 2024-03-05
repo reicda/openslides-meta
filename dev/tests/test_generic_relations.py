@@ -22,18 +22,6 @@ class Relations(BaseTestCase):
     """
 
     """ 1:1 relation tests """
-    """
-    FIELD 1tR:1t => meeting/motions_default_workflow_id:-> motion_workflow/default_workflow_meeting_id
-    FIELD 1tR:1t => meeting/motions_default_amendment_workflow_id:-> motion_workflow/default_amendment_workflow_meeting_id
-    FIELD 1tR:1t => meeting/motions_default_statute_amendment_workflow_id:-> motion_workflow/default_statute_amendment_workflow_meeting_id
-
-    SQL 1t:1r => meeting/default_meeting_for_committee_id:-> committee/default_meeting_id
-    FIELD 1r: => committee/default_meeting_id:-> meeting/
-
-    FIELD 1tR:1t => meeting/reference_projector_id:-> projector/used_as_reference_projector_meeting_id
-    FIELD 1tR:1t => meeting/default_group_id:-> group/default_group_for_meeting_id
-    FIELD 1tR:1t => motion_workflow/first_state_id:-> motion_state/first_state_of_workflow_id
-    """
     def test_one_to_one_pre_populated_1rR_1t(self) -> None:
         with self.db_connection.cursor() as curs:
             organization_row = DbUtils.select_id_wrapper(curs, "organization", self.organization_id, ["theme_id"])
@@ -57,24 +45,27 @@ class Relations(BaseTestCase):
             assert old_default_group_row["default_group_for_meeting_id"] == self.meeting1_id
             # change default group
             with self.db_connection.transaction():
-                group_delegate_row = curs.execute(sql.SQL("SELECT id, name, meeting_id, default_group_for_meeting_id FROM group_ where name = %s and meeting_id = %s;"), ("Delegates", self.meeting1_id)).fetchone()
-                assert group_delegate_row["id"] == 5
-                assert group_delegate_row["name"] == "Delegates"
-                assert group_delegate_row["meeting_id"] == self.meeting1_id
-                assert group_delegate_row["default_group_for_meeting_id"] == None
-                curs.execute(sql.SQL("UPDATE meetingT SET default_group_id = %s where id = %s;"), (group_delegate_row["id"], self.meeting1_id))
+                group_staff_row = curs.execute(sql.SQL("SELECT id, name, meeting_id, default_group_for_meeting_id FROM group_ where name = %s and meeting_id = %s;"), ("Staff", self.meeting1_id)).fetchone()
+                assert group_staff_row["id"] == self.groupM1_staff_id
+                assert group_staff_row["name"] == "Staff"
+                assert group_staff_row["meeting_id"] == self.meeting1_id
+                assert group_staff_row["default_group_for_meeting_id"] == None
+                curs.execute(sql.SQL("UPDATE meetingT SET default_group_id = %s where id = %s;"), (group_staff_row["id"], self.meeting1_id))
             # assert new and old data
             meeting_row = DbUtils.select_id_wrapper(curs, "meeting", self.meeting1_id, ["default_group_id"])
-            assert meeting_row["default_group_id"] == group_delegate_row["id"]
-            new_default_group_row = DbUtils.select_id_wrapper(curs, "group_", group_delegate_row["id"], ["default_group_for_meeting_id"])
+            assert meeting_row["default_group_id"] == group_staff_row["id"]
+            new_default_group_row = DbUtils.select_id_wrapper(curs, "group_", group_staff_row["id"], ["default_group_for_meeting_id"])
             assert new_default_group_row["default_group_for_meeting_id"] == self.meeting1_id
             old_default_group_row = DbUtils.select_id_wrapper(curs, "group_", old_default_group_id, ["default_group_for_meeting_id"])
             assert old_default_group_row["default_group_for_meeting_id"] == None
 
     """ 1:n relation tests """
+    """ Test:motion_state.submitter_withdraw_back_ids: sql okay?"""
+
     """ n:m relation tests """
     """ manual sqls tests"""
     """ all field type tests """
+    """ constraint tests """
 
     """ generic-relation tests """
     def test_generic_1GT_1tR(self) -> None:

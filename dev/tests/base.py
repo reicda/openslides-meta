@@ -23,15 +23,11 @@ class BaseTestCase(TestCase):
     organization_id = 0
     user1_id = 0
     committee1_id = 0
-    meeting1_id = 0
-    group_m1_ids = [0,0,0,0,0] # default, admin, staff, committees, delegates
-    projector_m1_ids = [0,0]
-    workflow_m1_simple_id = 0
-    workflow_m1_complex_id = 0
-    wf_m1_simple_motion_state_ids = [1, 2, 3, 4]
-    wf_m1_complex_motion_state_ids = [1, 2, 3, 4]
-    wf_m1_simple_first_state_id = 0
-    wf_m1_complex_first_state_id = 0
+    groupM1_default_id = 0
+    groupM1_admin_id = 0
+    groupM1_staff_id = 0
+    simple_workflowM1_id = 0
+    complex_workflowM1_id = 0
 
     @classmethod
     def set_db_connection(cls, db_name:str, autocommit:bool = False, row_factory:callable = psycopg.rows.dict_row) -> None:
@@ -137,452 +133,447 @@ class BaseTestCase(TestCase):
                     "name": "Default committee",
                     "description": "Add description here",
                 })
-                cls.meeting1_id = curs.execute("select nextval(pg_get_serial_sequence('meetingT', 'id')) as new_id;").fetchone()["new_id"]
-                cls.group_m1_ids = DbUtils.insert_many_wrapper(curs, "groupT", [
-                    {
-                        "name": "Default",
-                        "permissions": [
-                            "agenda_item.can_see_internal",
-                            "assignment.can_see",
-                            "list_of_speakers.can_see",
-                            "mediafile.can_see",
-                            "meeting.can_see_frontpage",
-                            "motion.can_see",
-                            "projector.can_see",
-                            "user.can_see"
-                        ],
-                        "weight": 1,
-                        "meeting_id": cls.meeting1_id
-                    },
-                    {
-                        "name": "Admin",
-                        "permissions": [],
-                        "weight": 2,
-                        "meeting_id": cls.meeting1_id
-                    },
-                    {
-                        "name": "Staff",
-                        "permissions": [
-                            "agenda_item.can_manage",
-                            "assignment.can_manage",
-                            "assignment.can_nominate_self",
-                            "list_of_speakers.can_be_speaker",
-                            "list_of_speakers.can_manage",
-                            "mediafile.can_manage",
-                            "meeting.can_see_frontpage",
-                            "meeting.can_see_history",
-                            "motion.can_manage",
-                            "poll.can_manage",
-                            "projector.can_manage",
-                            "tag.can_manage",
-                            "user.can_manage"
-                        ],
-                        "weight": 3,
-                        "meeting_id": cls.meeting1_id
-                    },
-                    {
-                        "name": "Committees",
-                        "permissions": [
-                            "agenda_item.can_see_internal",
-                            "assignment.can_see",
-                            "list_of_speakers.can_see",
-                            "mediafile.can_see",
-                            "meeting.can_see_frontpage",
-                            "motion.can_create",
-                            "motion.can_create_amendments",
-                            "motion.can_support",
-                            "projector.can_see",
-                            "user.can_see"
-                        ],
-                        "weight": 4,
-                        "meeting_id": cls.meeting1_id
-                    },
-                    {
-                        "name": "Delegates",
-                        "permissions": [
-                            "agenda_item.can_see_internal",
-                            "assignment.can_nominate_other",
-                            "assignment.can_nominate_self",
-                            "list_of_speakers.can_be_speaker",
-                            "mediafile.can_see",
-                            "meeting.can_see_autopilot",
-                            "meeting.can_see_frontpage",
-                            "motion.can_create",
-                            "motion.can_create_amendments",
-                            "motion.can_support",
-                            "projector.can_see",
-                            "user.can_see"
-                        ],
-                        "weight": 5,
-                        "meeting_id": cls.meeting1_id
-                    }
-                ])
-                cls.projector_m1_ids = DbUtils.insert_many_wrapper(curs, "projectorT", [
-                    {
-                        "name": "Default projector",
-                        "is_internal": False,
-                        "scale": 0,
-                        "scroll": 0,
-                        "width": 1220,
-                        "aspect_ratio_numerator": 4,
-                        "aspect_ratio_denominator": 3,
-                        "color": int("0x000000", 16),
-                        "background_color": int("0xffffff", 16),
-                        "header_background_color": int("0x317796", 16),
-                        "header_font_color": int("0xf5f5f5", 16),
-                        "header_h1_color": int("0x317796", 16),
-                        "chyron_background_color": int("0x317796", 16),
-                        "chyron_font_color": int("0xffffff", 16),
-                        "show_header_footer": True,
-                        "show_title": True,
-                        "show_logo": True,
-                        "show_clock": True,
-                        "sequential_number": 1,
-                        "meeting_id": cls.meeting1_id
-                    },
-                    {
-                        "name": "Nebenprojektor",
-                        "is_internal": False,
-                        "scale": 0,
-                        "scroll": 0,
-                        "width": 1024,
-                        "aspect_ratio_numerator": 16,
-                        "aspect_ratio_denominator": 9,
-                        "color": int("0x000000", 16),
-                        "background_color": int("0x888888", 16),
-                        "header_background_color": int("0x317796", 16),
-                        "header_font_color": int("0xf5f5f5", 16),
-                        "header_h1_color": int("0x317796", 16),
-                        "chyron_background_color": int("0x317796", 16),
-                        "chyron_font_color": int("0xffffff", 16),
-                        "show_header_footer": True,
-                        "show_title": True,
-                        "show_logo": True,
-                        "show_clock": True,
-                        "sequential_number": 2,
-                        "meeting_id": cls.meeting1_id
-                    }
-                ])
-                cls.workflow_m1_simple_id = curs.execute("select nextval(pg_get_serial_sequence('motion_workflowT', 'id')) as new_id;").fetchone()["new_id"]
-                cls.workflow_m1_complex_id = curs.execute("select nextval(pg_get_serial_sequence('motion_workflowT', 'id')) as new_id;").fetchone()["new_id"]
-                cls.wf_m1_simple_motion_state_ids = DbUtils.insert_many_wrapper(curs, "motion_stateT", [
-                    {
-                        "name": "submitted",
-                        "weight": 1,
-                        "css_class": "lightblue",
-                        "allow_support": True,
-                        "allow_create_poll": True,
-                        "allow_submitter_edit": True,
-                        "set_number": True,
-                        "merge_amendment_into_final": "undefined",
-                        "workflow_id": cls.workflow_m1_simple_id,
-                        "restrictions": [],
-                        "show_state_extension_field": False,
-                        "show_recommendation_extension_field": False,
-                        "set_workflow_timestamp": True,
-                        "allow_motion_forwarding": True,
-                        "meeting_id": cls.meeting1_id
-                    },
-                    {
-                        "name": "accepted",
-                        "weight": 2,
-                        "recommendation_label": "Acceptance",
-                        "css_class": "green",
-                        "set_number": True,
-                        "merge_amendment_into_final": "undefined",
-                        "workflow_id": cls.workflow_m1_simple_id,
-                        "restrictions": [],
-                        "show_state_extension_field": False,
-                        "show_recommendation_extension_field": False,
-                        "allow_submitter_edit": False,
-                        "allow_create_poll": False,
-                        "allow_support": False,
-                        "set_workflow_timestamp": False,
-                        "allow_motion_forwarding": True,
-                        "meeting_id": cls.meeting1_id
-                    },
-                    {
-                        "name": "rejected",
-                        "weight": 3,
-                        "recommendation_label": "Rejection",
-                        "css_class": "red",
-                        "set_number": True,
-                        "merge_amendment_into_final": "undefined",
-                        "workflow_id": cls.workflow_m1_simple_id,
-                        "restrictions": [],
-                        "show_state_extension_field": False,
-                        "show_recommendation_extension_field": False,
-                        "allow_submitter_edit": False,
-                        "allow_create_poll": False,
-                        "allow_support": False,
-                        "allow_motion_forwarding": True,
-                        "set_workflow_timestamp": False,
-                        "meeting_id": cls.meeting1_id
-                    },
-                    {
-                        "name": "not decided",
-                        "weight": 4,
-                        "recommendation_label": "No decision",
-                        "css_class": "grey",
-                        "set_number": True,
-                        "merge_amendment_into_final": "undefined",
-                        "workflow_id": cls.workflow_m1_simple_id,
-                        "restrictions": [],
-                        "show_state_extension_field": False,
-                        "show_recommendation_extension_field": False,
-                        "allow_submitter_edit": False,
-                        "allow_create_poll": False,
-                        "allow_support": False,
-                        "allow_motion_forwarding": True,
-                        "set_workflow_timestamp": False,
-                        "meeting_id": cls.meeting1_id
-                    },
-                ])
-                cls.wf_m1_simple_first_state_id = cls.wf_m1_simple_motion_state_ids[0]
-                cls.wf_m1_complex_motion_state_ids = DbUtils.insert_many_wrapper(curs, "motion_stateT", [
-                    {
-                        "name": "in progress",
-                        "weight": 5,
-                        "css_class": "lightblue",
-                        "set_number": False,
-                        "allow_submitter_edit": True,
-                        "merge_amendment_into_final": "undefined",
-                        "workflow_id": cls.workflow_m1_complex_id,
-                        "restrictions": [],
-                        "show_state_extension_field": False,
-                        "show_recommendation_extension_field": False,
-                        "allow_create_poll": False,
-                        "allow_support": False,
-                        "set_workflow_timestamp": True,
-                        "allow_motion_forwarding": True,
-                        "meeting_id": cls.meeting1_id
-                    },
-                    {
-                        "name": "submitted",
-                        "weight": 6,
-                        "css_class": "lightblue",
-                        "set_number": False,
-                        "merge_amendment_into_final": "undefined",
-                        "workflow_id": cls.workflow_m1_complex_id,
-                        "restrictions": [],
-                        "show_state_extension_field": False,
-                        "show_recommendation_extension_field": False,
-                        "allow_submitter_edit": False,
-                        "allow_create_poll": False,
-                        "allow_support": True,
-                        "allow_motion_forwarding": True,
-                        "set_workflow_timestamp": False,
-                        "meeting_id": cls.meeting1_id
-                    },
-                    {
-                        "name": "permitted",
-                        "weight": 7,
-                        "recommendation_label": "Permission",
-                        "css_class": "lightblue",
-                        "set_number": True,
-                        "merge_amendment_into_final": "undefined",
-                        "workflow_id": cls.workflow_m1_complex_id,
-                        "restrictions": [],
-                        "show_state_extension_field": False,
-                        "show_recommendation_extension_field": False,
-                        "allow_submitter_edit": False,
-                        "allow_create_poll": True,
-                        "allow_support": False,
-                        "allow_motion_forwarding": True,
-                        "set_workflow_timestamp": False,
-                        "meeting_id": 1
-                    },
-                    {
-                        "name": "accepted",
-                        "weight": 8,
-                        "recommendation_label": "Acceptance",
-                        "css_class": "green",
-                        "set_number": True,
-                        "merge_amendment_into_final": "do_merge",
-                        "workflow_id": cls.workflow_m1_complex_id,
-                        "restrictions": [],
-                        "show_state_extension_field": False,
-                        "show_recommendation_extension_field": False,
-                        "allow_submitter_edit": False,
-                        "allow_create_poll": False,
-                        "allow_support": False,
-                        "allow_motion_forwarding": True,
-                        "set_workflow_timestamp": False,
-                        "meeting_id": cls.meeting1_id
-                    },
-                    {
-                        "name": "rejected",
-                        "weight": 9,
-                        "recommendation_label": "Rejection",
-                        "css_class": "red",
-                        "set_number": True,
-                        "merge_amendment_into_final": "do_not_merge",
-                        "workflow_id": cls.workflow_m1_complex_id,
-                        "restrictions": [],
-                        "show_state_extension_field": False,
-                        "show_recommendation_extension_field": False,
-                        "allow_submitter_edit": False,
-                        "allow_create_poll": False,
-                        "allow_support": False,
-                        "allow_motion_forwarding": True,
-                        "set_workflow_timestamp": False,
-                        "meeting_id": cls.meeting1_id
-                    },
-                    {
-                        "name": "withdrawn",
-                        "weight": 10,
-                        "css_class": "grey",
-                        "set_number": True,
-                        "merge_amendment_into_final": "do_not_merge",
-                        "workflow_id": cls.workflow_m1_complex_id,
-                        "restrictions": [],
-                        "show_state_extension_field": False,
-                        "show_recommendation_extension_field": False,
-                        "allow_submitter_edit": False,
-                        "allow_create_poll": False,
-                        "allow_support": False,
-                        "allow_motion_forwarding": True,
-                        "set_workflow_timestamp": False,
-                        "meeting_id": cls.meeting1_id
-                    },
-                    {
-                        "name": "adjourned",
-                        "weight": 11,
-                        "recommendation_label": "Adjournment",
-                        "css_class": "grey",
-                        "set_number": True,
-                        "merge_amendment_into_final": "do_not_merge",
-                        "workflow_id": cls.workflow_m1_complex_id,
-                        "restrictions": [],
-                        "show_state_extension_field": False,
-                        "show_recommendation_extension_field": False,
-                        "allow_submitter_edit": False,
-                        "allow_create_poll": False,
-                        "allow_support": False,
-                        "allow_motion_forwarding": True,
-                        "set_workflow_timestamp": False,
-                        "meeting_id": cls.meeting1_id
-                    },
-                    {
-                        "name": "not concerned",
-                        "weight": 12,
-                        "recommendation_label": "No concernment",
-                        "css_class": "grey",
-                        "set_number": True,
-                        "merge_amendment_into_final": "do_not_merge",
-                        "workflow_id": cls.workflow_m1_complex_id,
-                        "restrictions": [],
-                        "show_state_extension_field": False,
-                        "show_recommendation_extension_field": False,
-                        "allow_submitter_edit": False,
-                        "allow_create_poll": False,
-                        "allow_support": False,
-                        "allow_motion_forwarding": True,
-                        "set_workflow_timestamp": False,
-                        "meeting_id": cls.meeting1_id
-                    },
-                    {
-                        "name": "referred to committee",
-                        "weight": 13,
-                        "recommendation_label": "Referral to committee",
-                        "css_class": "grey",
-                        "set_number": True,
-                        "merge_amendment_into_final": "do_not_merge",
-                        "workflow_id": cls.workflow_m1_complex_id,
-                        "restrictions": [],
-                        "show_state_extension_field": False,
-                        "show_recommendation_extension_field": False,
-                        "allow_submitter_edit": False,
-                        "allow_create_poll": False,
-                        "allow_support": False,
-                        "allow_motion_forwarding": True,
-                        "set_workflow_timestamp": False,
-                        "meeting_id": cls.meeting1_id
-                    },
-                    {
-                        "name": "needs review",
-                        "weight": 14,
-                        "css_class": "grey",
-                        "set_number": True,
-                        "merge_amendment_into_final": "do_not_merge",
-                        "workflow_id": cls.workflow_m1_complex_id,
-                        "restrictions": [],
-                        "show_state_extension_field": False,
-                        "show_recommendation_extension_field": False,
-                        "allow_submitter_edit": False,
-                        "allow_create_poll": False,
-                        "allow_support": False,
-                        "allow_motion_forwarding": True,
-                        "set_workflow_timestamp": False,
-                        "meeting_id": cls.meeting1_id
-                    },
-                    {
-                        "name": "rejected (not authorized)",
-                        "weight": 15,
-                        "recommendation_label": "Rejection (not authorized)",
-                        "css_class": "grey",
-                        "set_number": True,
-                        "merge_amendment_into_final": "do_not_merge",
-                        "workflow_id": cls.workflow_m1_complex_id,
-                        "restrictions": [],
-                        "show_state_extension_field": False,
-                        "show_recommendation_extension_field": False,
-                        "allow_submitter_edit": False,
-                        "allow_create_poll": False,
-                        "allow_support": False,
-                        "allow_motion_forwarding": True,
-                        "set_workflow_timestamp": False,
-                        "meeting_id": cls.meeting1_id
-                    },
-                ])
-                cls.wf_m1_complex_first_state_id = cls.wf_m1_complex_motion_state_ids[0]
+                result_ids = cls.create_meeting(curs, committee_id=cls.committee1_id)
+                cls.meeting1_id = result_ids["meeting_id"]
+                cls.groupM1_default_id = result_ids["default_group_id"]
+                cls.groupM1_admin_id = result_ids["admin_group_id"]
+                cls.groupM1_staff_id = result_ids["staff_group_id"]
+                cls.simple_workflowM1_id = result_ids["simple_workflow_id"]
+                cls.complex_workflowM1_id = result_ids["complex_workflow_id"]
+                curs.execute("UPDATE committeeT SET default_meeting_id = %s where id = %s;", (result_ids["meeting_id"], cls.committee1_id))
 
-                DbUtils.insert_many_wrapper(curs, "nm_motion_state_next_state_ids_motion_stateT", 
-                    [
-                        {"next_state_id": 2, "previous_state_id": 1},
-                        {"next_state_id": 3, "previous_state_id": 1},
-                        {"next_state_id": 4, "previous_state_id": 1},
-                        {"next_state_id": 6, "previous_state_id": 5},
-                        {"next_state_id": 10, "previous_state_id": 5},
-                        {"next_state_id": 7, "previous_state_id": 6},
-                        {"next_state_id": 10, "previous_state_id": 6},
-                        {"next_state_id": 15, "previous_state_id": 6},
-                        {"next_state_id": 8, "previous_state_id": 7},
-                        {"next_state_id": 9, "previous_state_id": 7},
-                        {"next_state_id": 10, "previous_state_id": 7},
-                        {"next_state_id": 11, "previous_state_id": 7},
-                        {"next_state_id": 12, "previous_state_id": 7},
-                        {"next_state_id": 13, "previous_state_id": 7},
-                        {"next_state_id": 14, "previous_state_id": 7},
-                    ], returning='')
-                assert [cls.workflow_m1_simple_id, cls.workflow_m1_complex_id] == DbUtils.insert_many_wrapper(curs, "motion_workflowT",
-                    [
-                        {
-                            "id": cls.workflow_m1_simple_id,
-                            "name": "Simple Workflow",
-                            "sequential_number": 1,
-                            "first_state_id": cls.wf_m1_simple_first_state_id,
-                            "meeting_id": cls.meeting1_id
-                        },
-                        {
-                            "id": cls.workflow_m1_complex_id,
-                            "name": "Complex Workflow",
-                            "sequential_number": 2,
-                            "first_state_id": cls.wf_m1_complex_first_state_id,
-                            "meeting_id": cls.meeting1_id
-                        }
-                    ]
-                )
-                assert 1 == DbUtils.insert_wrapper(curs, "meetingT", {
-                    "id": cls.meeting1_id,
+    @classmethod
+    def create_meeting(cls, curs: psycopg.Cursor, committee_id: int, meeting_id: int = 0, ) -> None:
+        """
+        Creates meeting with next availale id if not set or id set (lower ids can't be choosed afterwards)
+        The committee_id must be given and the committee must exist. The meeting will not be set as default meeting of the committee
+        3 groups with permissions (Default, Admin, Staff) were created
+        2 projectors (Default projector, Secondary projector) were created
+        2 workflows (simple, complex were created)
+        Return Value dict of ids with keys
+        - meeting_id
+        - default_group_id, admin_group_id, staff_group_id
+        - default_project_id, secondary_projector_id
+        - simple_workflow_id, complex_workflow_id
+        """
+        result = {}
+        if meeting_id:
+            sequence_name = curs.execute("select * from pg_get_serial_sequence('meetingT', 'id');").fetchone()["pg_get_serial_sequence"]
+            last_value = curs.execute(f"select last_value from {sequence_name};").fetchone()["last_value"]
+            if last_value >= meeting_id:
+                raise ValueError(f"meeting_id {meeting_id} is not available, last_value in sequence {sequence_name} is {last_value}")
+            result["meeting_id"] = curs.execute("select setval(pg_get_serial_sequence('meetingT', 'id'), %s);", (meeting_id,)).fetchone()["setval"]
+        else:
+            result["meeting_id"] = curs.execute("select nextval(pg_get_serial_sequence('meetingT', 'id')) as id_;").fetchone()["id_"]
+        (result["default_group_id"], result["admin_group_id"], result["staff_group_id"]) = DbUtils.insert_many_wrapper(curs, "groupT", [
+            {
+                "name": "Default",
+                "permissions": [
+                    "agenda_item.can_see_internal",
+                    "assignment.can_see",
+                    "list_of_speakers.can_see",
+                    "mediafile.can_see",
+                    "meeting.can_see_frontpage",
+                    "motion.can_see",
+                    "projector.can_see",
+                    "user.can_see"
+                ],
+                "weight": 1,
+                "meeting_id": result["meeting_id"]
+            },
+            {
+                "name": "Admin",
+                "permissions": [],
+                "weight": 2,
+                "meeting_id": result["meeting_id"]
+            },
+            {
+                "name": "Staff",
+                "permissions": [
+                    "agenda_item.can_manage",
+                    "assignment.can_manage",
+                    "assignment.can_nominate_self",
+                    "list_of_speakers.can_be_speaker",
+                    "list_of_speakers.can_manage",
+                    "mediafile.can_manage",
+                    "meeting.can_see_frontpage",
+                    "meeting.can_see_history",
+                    "motion.can_manage",
+                    "poll.can_manage",
+                    "projector.can_manage",
+                    "tag.can_manage",
+                    "user.can_manage"
+                ],
+                "weight": 3,
+                "meeting_id": result["meeting_id"]
+            }
+        ])
+        (result["default_projector_id"], result["secondary_projector_id"]) = DbUtils.insert_many_wrapper(curs, "projectorT", [
+            {
+                "name": "Default projector",
+                "is_internal": False,
+                "scale": 0,
+                "scroll": 0,
+                "width": 1220,
+                "aspect_ratio_numerator": 4,
+                "aspect_ratio_denominator": 3,
+                "color": int("0x000000", 16),
+                "background_color": int("0xffffff", 16),
+                "header_background_color": int("0x317796", 16),
+                "header_font_color": int("0xf5f5f5", 16),
+                "header_h1_color": int("0x317796", 16),
+                "chyron_background_color": int("0x317796", 16),
+                "chyron_font_color": int("0xffffff", 16),
+                "show_header_footer": True,
+                "show_title": True,
+                "show_logo": True,
+                "show_clock": True,
+                "sequential_number": 1,
+                "meeting_id": result["meeting_id"]
+            },
+            {
+                "name": "Secondary projector",
+                "is_internal": False,
+                "scale": 0,
+                "scroll": 0,
+                "width": 1024,
+                "aspect_ratio_numerator": 16,
+                "aspect_ratio_denominator": 9,
+                "color": int("0x000000", 16),
+                "background_color": int("0x888888", 16),
+                "header_background_color": int("0x317796", 16),
+                "header_font_color": int("0xf5f5f5", 16),
+                "header_h1_color": int("0x317796", 16),
+                "chyron_background_color": int("0x317796", 16),
+                "chyron_font_color": int("0xffffff", 16),
+                "show_header_footer": True,
+                "show_title": True,
+                "show_logo": True,
+                "show_clock": True,
+                "sequential_number": 2,
+                "meeting_id": result["meeting_id"]
+            }
+        ])
+        result["simple_workflow_id"] = curs.execute("select nextval(pg_get_serial_sequence('motion_workflowT', 'id')) as new_id;").fetchone()["new_id"]
+        result["complex_workflow_id"] = curs.execute("select nextval(pg_get_serial_sequence('motion_workflowT', 'id')) as new_id;").fetchone()["new_id"]
+        wf_m1_simple_motion_state_ids = DbUtils.insert_many_wrapper(curs, "motion_stateT", [
+            {
+                "name": "submitted",
+                "weight": 1,
+                "css_class": "lightblue",
+                "allow_support": True,
+                "allow_create_poll": True,
+                "allow_submitter_edit": True,
+                "set_number": True,
+                "merge_amendment_into_final": "undefined",
+                "workflow_id": result["simple_workflow_id"],
+                "restrictions": [],
+                "show_state_extension_field": False,
+                "show_recommendation_extension_field": False,
+                "set_workflow_timestamp": True,
+                "allow_motion_forwarding": True,
+                "meeting_id": result["meeting_id"]
+            },
+            {
+                "name": "accepted",
+                "weight": 2,
+                "recommendation_label": "Acceptance",
+                "css_class": "green",
+                "set_number": True,
+                "merge_amendment_into_final": "undefined",
+                "workflow_id": result["simple_workflow_id"],
+                "restrictions": [],
+                "show_state_extension_field": False,
+                "show_recommendation_extension_field": False,
+                "allow_submitter_edit": False,
+                "allow_create_poll": False,
+                "allow_support": False,
+                "set_workflow_timestamp": False,
+                "allow_motion_forwarding": True,
+                "meeting_id": result["meeting_id"]
+            },
+            {
+                "name": "rejected",
+                "weight": 3,
+                "recommendation_label": "Rejection",
+                "css_class": "red",
+                "set_number": True,
+                "merge_amendment_into_final": "undefined",
+                "workflow_id": result["simple_workflow_id"],
+                "restrictions": [],
+                "show_state_extension_field": False,
+                "show_recommendation_extension_field": False,
+                "allow_submitter_edit": False,
+                "allow_create_poll": False,
+                "allow_support": False,
+                "allow_motion_forwarding": True,
+                "set_workflow_timestamp": False,
+                "meeting_id": result["meeting_id"]
+            },
+            {
+                "name": "not decided",
+                "weight": 4,
+                "recommendation_label": "No decision",
+                "css_class": "grey",
+                "set_number": True,
+                "merge_amendment_into_final": "undefined",
+                "workflow_id": result["simple_workflow_id"],
+                "restrictions": [],
+                "show_state_extension_field": False,
+                "show_recommendation_extension_field": False,
+                "allow_submitter_edit": False,
+                "allow_create_poll": False,
+                "allow_support": False,
+                "allow_motion_forwarding": True,
+                "set_workflow_timestamp": False,
+                "meeting_id": result["meeting_id"]
+            },
+        ])
+        wf_m1_simple_first_state_id = wf_m1_simple_motion_state_ids[0]
+        wf_m1_complex_motion_state_ids = DbUtils.insert_many_wrapper(curs, "motion_stateT", [
+            {
+                "name": "in progress",
+                "weight": 5,
+                "css_class": "lightblue",
+                "set_number": False,
+                "allow_submitter_edit": True,
+                "merge_amendment_into_final": "undefined",
+                "workflow_id": result["complex_workflow_id"],
+                "restrictions": [],
+                "show_state_extension_field": False,
+                "show_recommendation_extension_field": False,
+                "allow_create_poll": False,
+                "allow_support": False,
+                "set_workflow_timestamp": True,
+                "allow_motion_forwarding": True,
+                "meeting_id": result["meeting_id"]
+            },
+            {
+                "name": "submitted",
+                "weight": 6,
+                "css_class": "lightblue",
+                "set_number": False,
+                "merge_amendment_into_final": "undefined",
+                "workflow_id": result["complex_workflow_id"],
+                "restrictions": [],
+                "show_state_extension_field": False,
+                "show_recommendation_extension_field": False,
+                "allow_submitter_edit": False,
+                "allow_create_poll": False,
+                "allow_support": True,
+                "allow_motion_forwarding": True,
+                "set_workflow_timestamp": False,
+                "meeting_id": result["meeting_id"]
+            },
+            {
+                "name": "permitted",
+                "weight": 7,
+                "recommendation_label": "Permission",
+                "css_class": "lightblue",
+                "set_number": True,
+                "merge_amendment_into_final": "undefined",
+                "workflow_id": result["complex_workflow_id"],
+                "restrictions": [],
+                "show_state_extension_field": False,
+                "show_recommendation_extension_field": False,
+                "allow_submitter_edit": False,
+                "allow_create_poll": True,
+                "allow_support": False,
+                "allow_motion_forwarding": True,
+                "set_workflow_timestamp": False,
+                "meeting_id": 1
+            },
+            {
+                "name": "accepted",
+                "weight": 8,
+                "recommendation_label": "Acceptance",
+                "css_class": "green",
+                "set_number": True,
+                "merge_amendment_into_final": "do_merge",
+                "workflow_id": result["complex_workflow_id"],
+                "restrictions": [],
+                "show_state_extension_field": False,
+                "show_recommendation_extension_field": False,
+                "allow_submitter_edit": False,
+                "allow_create_poll": False,
+                "allow_support": False,
+                "allow_motion_forwarding": True,
+                "set_workflow_timestamp": False,
+                "meeting_id": result["meeting_id"]
+            },
+            {
+                "name": "rejected",
+                "weight": 9,
+                "recommendation_label": "Rejection",
+                "css_class": "red",
+                "set_number": True,
+                "merge_amendment_into_final": "do_not_merge",
+                "workflow_id": result["complex_workflow_id"],
+                "restrictions": [],
+                "show_state_extension_field": False,
+                "show_recommendation_extension_field": False,
+                "allow_submitter_edit": False,
+                "allow_create_poll": False,
+                "allow_support": False,
+                "allow_motion_forwarding": True,
+                "set_workflow_timestamp": False,
+                "meeting_id": result["meeting_id"]
+            },
+            {
+                "name": "withdrawn",
+                "weight": 10,
+                "css_class": "grey",
+                "set_number": True,
+                "merge_amendment_into_final": "do_not_merge",
+                "workflow_id": result["complex_workflow_id"],
+                "restrictions": [],
+                "show_state_extension_field": False,
+                "show_recommendation_extension_field": False,
+                "allow_submitter_edit": False,
+                "allow_create_poll": False,
+                "allow_support": False,
+                "allow_motion_forwarding": True,
+                "set_workflow_timestamp": False,
+                "meeting_id": result["meeting_id"]
+            },
+            {
+                "name": "adjourned",
+                "weight": 11,
+                "recommendation_label": "Adjournment",
+                "css_class": "grey",
+                "set_number": True,
+                "merge_amendment_into_final": "do_not_merge",
+                "workflow_id": result["complex_workflow_id"],
+                "restrictions": [],
+                "show_state_extension_field": False,
+                "show_recommendation_extension_field": False,
+                "allow_submitter_edit": False,
+                "allow_create_poll": False,
+                "allow_support": False,
+                "allow_motion_forwarding": True,
+                "set_workflow_timestamp": False,
+                "meeting_id": result["meeting_id"]
+            },
+            {
+                "name": "not concerned",
+                "weight": 12,
+                "recommendation_label": "No concernment",
+                "css_class": "grey",
+                "set_number": True,
+                "merge_amendment_into_final": "do_not_merge",
+                "workflow_id": result["complex_workflow_id"],
+                "restrictions": [],
+                "show_state_extension_field": False,
+                "show_recommendation_extension_field": False,
+                "allow_submitter_edit": False,
+                "allow_create_poll": False,
+                "allow_support": False,
+                "allow_motion_forwarding": True,
+                "set_workflow_timestamp": False,
+                "meeting_id": result["meeting_id"]
+            },
+            {
+                "name": "referred to committee",
+                "weight": 13,
+                "recommendation_label": "Referral to committee",
+                "css_class": "grey",
+                "set_number": True,
+                "merge_amendment_into_final": "do_not_merge",
+                "workflow_id": result["complex_workflow_id"],
+                "restrictions": [],
+                "show_state_extension_field": False,
+                "show_recommendation_extension_field": False,
+                "allow_submitter_edit": False,
+                "allow_create_poll": False,
+                "allow_support": False,
+                "allow_motion_forwarding": True,
+                "set_workflow_timestamp": False,
+                "meeting_id": result["meeting_id"]
+            },
+            {
+                "name": "needs review",
+                "weight": 14,
+                "css_class": "grey",
+                "set_number": True,
+                "merge_amendment_into_final": "do_not_merge",
+                "workflow_id": result["complex_workflow_id"],
+                "restrictions": [],
+                "show_state_extension_field": False,
+                "show_recommendation_extension_field": False,
+                "allow_submitter_edit": False,
+                "allow_create_poll": False,
+                "allow_support": False,
+                "allow_motion_forwarding": True,
+                "set_workflow_timestamp": False,
+                "meeting_id": result["meeting_id"]
+            },
+            {
+                "name": "rejected (not authorized)",
+                "weight": 15,
+                "recommendation_label": "Rejection (not authorized)",
+                "css_class": "grey",
+                "set_number": True,
+                "merge_amendment_into_final": "do_not_merge",
+                "workflow_id": result["complex_workflow_id"],
+                "restrictions": [],
+                "show_state_extension_field": False,
+                "show_recommendation_extension_field": False,
+                "allow_submitter_edit": False,
+                "allow_create_poll": False,
+                "allow_support": False,
+                "allow_motion_forwarding": True,
+                "set_workflow_timestamp": False,
+                "meeting_id": result["meeting_id"]
+            },
+        ])
+        wf_m1_complex_first_state_id = wf_m1_complex_motion_state_ids[0]
+
+        DbUtils.insert_many_wrapper(curs, "nm_motion_state_next_state_ids_motion_stateT", 
+            [
+                {"next_state_id": wf_m1_simple_motion_state_ids[1], "previous_state_id": wf_m1_simple_motion_state_ids[0]},
+                {"next_state_id": wf_m1_simple_motion_state_ids[2], "previous_state_id": wf_m1_simple_motion_state_ids[0]},
+                {"next_state_id": wf_m1_simple_motion_state_ids[3], "previous_state_id": wf_m1_simple_motion_state_ids[0]},
+                {"next_state_id": wf_m1_complex_motion_state_ids[1], "previous_state_id": wf_m1_complex_motion_state_ids[0]},
+                {"next_state_id": wf_m1_complex_motion_state_ids[5], "previous_state_id": wf_m1_complex_motion_state_ids[0]},
+                {"next_state_id": wf_m1_complex_motion_state_ids[2], "previous_state_id": wf_m1_complex_motion_state_ids[1]},
+                {"next_state_id": wf_m1_complex_motion_state_ids[5], "previous_state_id": wf_m1_complex_motion_state_ids[1]},
+                {"next_state_id": wf_m1_complex_motion_state_ids[10], "previous_state_id": wf_m1_complex_motion_state_ids[1]},
+                {"next_state_id": wf_m1_complex_motion_state_ids[3], "previous_state_id": wf_m1_complex_motion_state_ids[2]},
+                {"next_state_id": wf_m1_complex_motion_state_ids[4], "previous_state_id": wf_m1_complex_motion_state_ids[2]},
+                {"next_state_id": wf_m1_complex_motion_state_ids[5], "previous_state_id": wf_m1_complex_motion_state_ids[2]},
+                {"next_state_id": wf_m1_complex_motion_state_ids[6], "previous_state_id": wf_m1_complex_motion_state_ids[2]},
+                {"next_state_id": wf_m1_complex_motion_state_ids[7], "previous_state_id": wf_m1_complex_motion_state_ids[2]},
+                {"next_state_id": wf_m1_complex_motion_state_ids[8], "previous_state_id": wf_m1_complex_motion_state_ids[2]},
+                {"next_state_id": wf_m1_complex_motion_state_ids[9], "previous_state_id": wf_m1_complex_motion_state_ids[2]},
+            ], returning='')
+        assert [result["simple_workflow_id"], result["complex_workflow_id"]] == DbUtils.insert_many_wrapper(curs, "motion_workflowT",
+            [
+                {
+                    "id": result["simple_workflow_id"],
+                    "name": "Simple Workflow",
+                    "sequential_number": 1,
+                    "first_state_id": wf_m1_simple_first_state_id,
+                    "meeting_id": result["meeting_id"]
+                },
+                {
+                    "id": result["complex_workflow_id"],
+                    "name": "Complex Workflow",
+                    "sequential_number": 2,
+                    "first_state_id": wf_m1_complex_first_state_id,
+                    "meeting_id": result["meeting_id"]
+                }
+            ]
+        )
+        assert result["meeting_id"] == DbUtils.insert_wrapper(curs, "meetingT", {
+                    "id": result["meeting_id"],
                     "name": "OpenSlides Demo",
                     "is_active_in_organization_id": cls.organization_id,
                     "language": "en",
                     "conference_los_restriction": True,
                     "agenda_number_prefix": "TOP",
-                    "motions_default_workflow_id": cls.workflow_m1_simple_id,
-                    "motions_default_amendment_workflow_id": cls.workflow_m1_complex_id,
-                    "motions_default_statute_amendment_workflow_id": cls.workflow_m1_complex_id,
+                    "motions_default_workflow_id": result["simple_workflow_id"],
+                    "motions_default_amendment_workflow_id": result["complex_workflow_id"],
+                    "motions_default_statute_amendment_workflow_id": result["complex_workflow_id"],
                     "motions_recommendations_by": "ABK",
                     "motions_statute_recommendations_by": "",
                     "motions_statutes_enabled": True,
@@ -599,24 +590,24 @@ class BaseTestCase(TestCase):
                     "poll_default_type": "nominal",
                     "poll_default_method": "votes",
                     "poll_default_onehundred_percent_base": "valid",
-                    "committee_id": cls.committee1_id,
-                    "reference_projector_id": cls.projector_m1_ids[0],
+                    "committee_id": committee_id,
+                    "reference_projector_id": result["default_projector_id"],
                     # Fields still not generated, required relation_list not implemented
-                    # "default_projector_agenda_item_list_ids": [projector_ids[0]],
-                    # "default_projector_topic_ids": [projector_ids[0]],
-                    # "default_projector_list_of_speakers_ids": [projector_ids[1]],
-                    # "default_projector_current_list_of_speakers_ids": [projector_ids[1]],
-                    # "default_projector_motion_ids": [projector_ids[0]],
-                    # "default_projector_amendment_ids": [projector_ids[0]],
-                    # "default_projector_motion_block_ids": [projector_ids[0]],
-                    # "default_projector_assignment_ids": [projector_ids[0]],
-                    # "default_projector_mediafile_ids": [projector_ids[0]],
-                    # "default_projector_message_ids": [projector_ids[0]],
-                    # "default_projector_countdown_ids": [projector_ids[0]],
-                    # "default_projector_assignment_poll_ids": [projector_ids[0]],
-                    # "default_projector_motion_poll_ids": [projector_ids[0]],
-                    # "default_projector_poll_ids": [projector_ids[0]],
-                    "default_group_id": cls.group_m1_ids[0],
-                    "admin_group_id": cls.group_m1_ids[1]
+                    # "default_projector_agenda_item_list_ids": [result["default_projector_id"]],
+                    # "default_projector_topic_ids": [result["default_projector_id"]],
+                    # "default_projector_list_of_speakers_ids": [result["secondary_projector_id"]],
+                    # "default_projector_current_list_of_speakers_ids": [result["secondary_projector_id"]],
+                    # "default_projector_motion_ids": [result["default_projector_id"]],
+                    # "default_projector_amendment_ids": [result["default_projector_id"]],
+                    # "default_projector_motion_block_ids": [result["default_projector_id"]],
+                    # "default_projector_assignment_ids": [result["default_projector_id"]],
+                    # "default_projector_mediafile_ids": [result["default_projector_id"]],
+                    # "default_projector_message_ids": [result["default_projector_id"]],
+                    # "default_projector_countdown_ids": [result["default_projector_id"]],
+                    # "default_projector_assignment_poll_ids": [result["default_projector_id"]],
+                    # "default_projector_motion_poll_ids": [result["default_projector_id"]],
+                    # "default_projector_poll_ids": [result["default_projector_id"]],
+                    "default_group_id": result["default_group_id"],
+                    "admin_group_id": result["admin_group_id"]
                 })
-                curs.execute("UPDATE committeeT SET default_meeting_id = %s where id = %s;", (cls.meeting1_id, cls.committee1_id))
+        return result

@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import cast
 
 import psycopg
 import pytest
@@ -59,8 +60,57 @@ class Relations(BaseTestCase):
             old_default_group_row = DbUtils.select_id_wrapper(curs, "group_", old_default_group_id, ["default_group_for_meeting_id"])
             assert old_default_group_row["default_group_for_meeting_id"] == None
 
-    """ 1:n relation tests """
+    """ 1:n relation tests with n-side NOT NULL """
     """ Test:motion_state.submitter_withdraw_back_ids: sql okay?"""
+    def test_one_to_many_1t_ntR_update_error(self) -> None:
+        """ update removes default projector => Exception"""
+        with self.db_connection.cursor() as curs:
+            with pytest.raises(psycopg.errors.RaiseException) as e:
+                projector_id = curs.execute("SELECT id from projector where used_as_default_projector_for_topic_in_meeting_id = %s", (self.meeting1_id,)).fetchone()['id']
+                with self.db_connection.transaction():
+                    curs.execute(sql.SQL("UPDATE projectorT SET used_as_default_projector_for_topic_in_meeting_id = null where id = %s;"), (projector_id,))
+        assert 'Exception: NOT NULL CONSTRAINT VIOLATED for meeting.default_projector_topic_ids' in str(e)
+
+    def test_one_to_many_1t_ntR_update_okay(self) -> None:
+        """ Update sets new default projector before 2nd removes old default projector"""
+        with self.db_connection.cursor() as curs:
+            projector_ids = curs.execute("SELECT id from projector where meeting_id = %s", (self.meeting1_id,)).fetchall()
+            with self.db_connection.transaction():
+                curs.execute(sql.SQL("UPDATE projectorT SET used_as_default_projector_for_topic_in_meeting_id = %s where id = %s;"), (self.meeting1_id, projector_ids[1]["id"]))
+                curs.execute(sql.SQL("UPDATE projectorT SET used_as_default_projector_for_topic_in_meeting_id = null where id = %s;"), (projector_ids[0]["id"],))
+            assert projector_ids[1]["id"] == DbUtils.select_id_wrapper(curs, 'meeting', self.meeting1_id, ['default_projector_topic_ids'])['default_projector_topic_ids'][0]
+
+    def test_one_to_many_1t_ntR_update_wrong_update_sequence_error(self) -> None:
+        """ first update removes the projector from meeting => Exception"""
+        with self.db_connection.cursor() as curs:
+            projector_ids = curs.execute("SELECT id from projector where used_as_default_projector_for_topic_in_meeting_id = %s", (self.meeting1_id,)).fetchall()
+            with pytest.raises(psycopg.errors.RaiseException) as e:
+                with self.db_connection.transaction():
+                    curs.execute(sql.SQL("UPDATE projectorT SET used_as_default_projector_for_topic_in_meeting_id = null where id = %s;"), (projector_ids[0]["id"],))
+                    curs.execute(sql.SQL("UPDATE projectorT SET used_as_default_projector_for_topic_in_meeting_id = %s where id = %s;"), (self.meeting1_id, projector_ids[1]["id"]))
+        assert 'Exception: NOT NULL CONSTRAINT VIOLATED for meeting.default_projector_topic_ids' in str(e)
+
+    def test_one_to_many_1t_ntR_delete_error(self) -> None:
+        """ delete projector from meeting => Exception"""
+        with self.db_connection.cursor() as curs:
+            projector_id = curs.execute("SELECT id from projector where used_as_default_projector_for_topic_in_meeting_id = %s", (self.meeting1_id,)).fetchone()["id"]
+            with pytest.raises(psycopg.errors.RaiseException) as e:
+                with self.db_connection.transaction():
+                    curs.execute(sql.SQL("DELETE FROM projector where id = %s;"), (projector_id,))
+        assert 'Exception: NOT NULL CONSTRAINT VIOLATED' in str(e)
+
+    def test_one_to_many_1t_ntR_delete_insert_okay(self) -> None:
+        """ first insert, than delete old default projector from meeting => okay"""
+        with self.db_connection.cursor() as curs:
+            with self.db_connection.transaction():
+                projector = curs.execute("SELECT * from projector where used_as_default_projector_for_topic_in_meeting_id = %s", (self.meeting1_id,)).fetchone()
+                field_list = ["meeting_id", "used_as_default_projector_for_agenda_item_list_in_meeting_id", "used_as_default_projector_for_topic_in_meeting_id", "used_as_default_projector_for_list_of_speakers_in_meeting_id", "used_as_default_projector_for_current_los_in_meeting_id", "used_as_default_projector_for_motion_in_meeting_id", "used_as_default_projector_for_amendment_in_meeting_id", "used_as_default_projector_for_motion_block_in_meeting_id", "used_as_default_projector_for_assignment_in_meeting_id", "used_as_default_projector_for_mediafile_in_meeting_id", "used_as_default_projector_for_message_in_meeting_id", "used_as_default_projector_for_countdown_in_meeting_id", "used_as_default_projector_for_assignment_poll_in_meeting_id", "used_as_default_projector_for_motion_poll_in_meeting_id", "used_as_default_projector_for_poll_in_meeting_id"]
+                data = {fname: projector[fname] for fname in field_list}
+                data["sequential_number"] = projector["sequential_number"] + 2
+                new_projector_id = DbUtils.insert_wrapper(curs, "projectorT", data)
+                curs.execute(sql.SQL("UPDATE meetingT SET reference_projector_id = %s where id = %s;"), (new_projector_id, projector["meeting_id"]))
+                curs.execute(sql.SQL("DELETE FROM projector where id = %s;"), (projector["id"],))
+            assert new_projector_id == cast(dict, DbUtils.select_id_wrapper(curs, "meeting", projector["meeting_id"], ["default_projector_topic_ids"]))["default_projector_topic_ids"][0]
 
     """ n:m relation tests """
     """ manual sqls tests"""

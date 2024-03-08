@@ -1,6 +1,47 @@
 
 -- schema_relational.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
+CREATE EXTENSION hstore;  -- included in standard postgres-installations, check for alpine
+
+create or replace function check_not_null_for_relation_lists() returns trigger as $not_null_trigger$
+-- usage with 3 parameters IN TRIGGER DEFINITION:
+-- table_name of field to check, usually a field in a view
+-- column_name of field to check
+-- foreign_key field name of triggered table, that will be used to SELECT the values to check the not null 
+DECLARE
+    table_name TEXT;
+    column_name TEXT;
+    foreign_key TEXT;
+    foreign_id INTEGER;
+    counted INTEGER;
+begin
+    table_name = TG_ARGV[0];
+    column_name = TG_ARGV[1];
+    foreign_key = TG_ARGV[2];
+
+    IF (TG_OP = 'INSERT') THEN
+        foreign_id := hstore(NEW) -> foreign_key;
+        IF (foreign_id is NOT NULL) THEN
+            foreign_id = NULL; -- no need to ask DB
+        END IF;
+    ELSIF (TG_OP = 'UPDATE') THEN
+        foreign_id := hstore(NEW) -> foreign_key;
+        IF (foreign_id is NULL) THEN
+            foreign_id = OLD.used_as_default_projector_for_topic_in_meeting_id;
+        END IF;
+    ELSIF (TG_OP = 'DELETE') THEN
+        foreign_id := hstore(OLD) -> foreign_key;
+    END IF;
+
+    IF (foreign_id IS NOT NULL) THEN
+        EXECUTE format('SELECT array_length(%I, 1) FROM %I where id = %s', column_name, table_name, foreign_id) INTO counted;
+        IF (counted is NULL) THEN
+            RAISE EXCEPTION 'Trigger % Exception: NOT NULL CONSTRAINT VIOLATED for %.%', TG_NAME, table_name, column_name;
+        END IF;
+    END IF;
+    RETURN NULL;  -- AFTER TRIGGER needs no return
+end;
+$not_null_trigger$ language plpgsql;
 
 CREATE OR REPLACE FUNCTION truncate_tables(username IN VARCHAR) RETURNS void AS $$
 DECLARE
@@ -1300,6 +1341,20 @@ CREATE TABLE IF NOT EXISTS projectorT (
     show_logo boolean DEFAULT True,
     show_clock boolean DEFAULT True,
     sequential_number integer NOT NULL,
+    used_as_default_projector_for_agenda_item_list_in_meeting_id integer,
+    used_as_default_projector_for_topic_in_meeting_id integer,
+    used_as_default_projector_for_list_of_speakers_in_meeting_id integer,
+    used_as_default_projector_for_current_los_in_meeting_id integer,
+    used_as_default_projector_for_motion_in_meeting_id integer,
+    used_as_default_projector_for_amendment_in_meeting_id integer,
+    used_as_default_projector_for_motion_block_in_meeting_id integer,
+    used_as_default_projector_for_assignment_in_meeting_id integer,
+    used_as_default_projector_for_mediafile_in_meeting_id integer,
+    used_as_default_projector_for_message_in_meeting_id integer,
+    used_as_default_projector_for_countdown_in_meeting_id integer,
+    used_as_default_projector_for_assignment_poll_in_meeting_id integer,
+    used_as_default_projector_for_motion_poll_in_meeting_id integer,
+    used_as_default_projector_for_poll_in_meeting_id integer,
     meeting_id integer NOT NULL
 );
 
@@ -1664,7 +1719,21 @@ CREATE OR REPLACE VIEW meeting AS SELECT *,
 (select c.id from committeeT c where c.default_meeting_id = m.id) as default_meeting_for_committee_id,
 (select array_agg(g.organization_tag_id) from gm_organization_tag_tagged_idsT g where g.tagged_id_meeting_id = m.id) as organization_tag_ids,
 (select array_agg(n.user_id) from nm_meeting_present_user_ids_userT n where n.meeting_id = m.id) as present_user_ids,
-(select array_agg(p.id) from projectionT p where p.content_object_id_meeting_id = m.id) as projection_ids
+(select array_agg(p.id) from projectionT p where p.content_object_id_meeting_id = m.id) as projection_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_agenda_item_list_in_meeting_id = m.id) as default_projector_agenda_item_list_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_topic_in_meeting_id = m.id) as default_projector_topic_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_list_of_speakers_in_meeting_id = m.id) as default_projector_list_of_speakers_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_current_los_in_meeting_id = m.id) as default_projector_current_list_of_speakers_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_motion_in_meeting_id = m.id) as default_projector_motion_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_amendment_in_meeting_id = m.id) as default_projector_amendment_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_motion_block_in_meeting_id = m.id) as default_projector_motion_block_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_assignment_in_meeting_id = m.id) as default_projector_assignment_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_mediafile_in_meeting_id = m.id) as default_projector_mediafile_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_message_in_meeting_id = m.id) as default_projector_message_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_countdown_in_meeting_id = m.id) as default_projector_countdown_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_assignment_poll_in_meeting_id = m.id) as default_projector_assignment_poll_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_motion_poll_in_meeting_id = m.id) as default_projector_motion_poll_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_poll_in_meeting_id = m.id) as default_projector_poll_ids
 FROM meetingT m;
 
 
@@ -2040,6 +2109,20 @@ ALTER TABLE mediafileT ADD FOREIGN KEY(parent_id) REFERENCES mediafileT(id);
 ALTER TABLE mediafileT ADD FOREIGN KEY(owner_id_meeting_id) REFERENCES meetingT(id);
 ALTER TABLE mediafileT ADD FOREIGN KEY(owner_id_organization_id) REFERENCES organizationT(id);
 
+ALTER TABLE projectorT ADD FOREIGN KEY(used_as_default_projector_for_agenda_item_list_in_meeting_id) REFERENCES meetingT(id) INITIALLY DEFERRED;
+ALTER TABLE projectorT ADD FOREIGN KEY(used_as_default_projector_for_topic_in_meeting_id) REFERENCES meetingT(id) INITIALLY DEFERRED;
+ALTER TABLE projectorT ADD FOREIGN KEY(used_as_default_projector_for_list_of_speakers_in_meeting_id) REFERENCES meetingT(id) INITIALLY DEFERRED;
+ALTER TABLE projectorT ADD FOREIGN KEY(used_as_default_projector_for_current_los_in_meeting_id) REFERENCES meetingT(id) INITIALLY DEFERRED;
+ALTER TABLE projectorT ADD FOREIGN KEY(used_as_default_projector_for_motion_in_meeting_id) REFERENCES meetingT(id) INITIALLY DEFERRED;
+ALTER TABLE projectorT ADD FOREIGN KEY(used_as_default_projector_for_amendment_in_meeting_id) REFERENCES meetingT(id) INITIALLY DEFERRED;
+ALTER TABLE projectorT ADD FOREIGN KEY(used_as_default_projector_for_motion_block_in_meeting_id) REFERENCES meetingT(id) INITIALLY DEFERRED;
+ALTER TABLE projectorT ADD FOREIGN KEY(used_as_default_projector_for_assignment_in_meeting_id) REFERENCES meetingT(id) INITIALLY DEFERRED;
+ALTER TABLE projectorT ADD FOREIGN KEY(used_as_default_projector_for_mediafile_in_meeting_id) REFERENCES meetingT(id) INITIALLY DEFERRED;
+ALTER TABLE projectorT ADD FOREIGN KEY(used_as_default_projector_for_message_in_meeting_id) REFERENCES meetingT(id) INITIALLY DEFERRED;
+ALTER TABLE projectorT ADD FOREIGN KEY(used_as_default_projector_for_countdown_in_meeting_id) REFERENCES meetingT(id) INITIALLY DEFERRED;
+ALTER TABLE projectorT ADD FOREIGN KEY(used_as_default_projector_for_assignment_poll_in_meeting_id) REFERENCES meetingT(id) INITIALLY DEFERRED;
+ALTER TABLE projectorT ADD FOREIGN KEY(used_as_default_projector_for_motion_poll_in_meeting_id) REFERENCES meetingT(id) INITIALLY DEFERRED;
+ALTER TABLE projectorT ADD FOREIGN KEY(used_as_default_projector_for_poll_in_meeting_id) REFERENCES meetingT(id) INITIALLY DEFERRED;
 ALTER TABLE projectorT ADD FOREIGN KEY(meeting_id) REFERENCES meetingT(id) INITIALLY DEFERRED;
 
 ALTER TABLE projectionT ADD FOREIGN KEY(current_projector_id) REFERENCES projectorT(id);
@@ -2068,6 +2151,120 @@ ALTER TABLE chat_messageT ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_us
 ALTER TABLE chat_messageT ADD FOREIGN KEY(chat_group_id) REFERENCES chat_groupT(id);
 ALTER TABLE chat_messageT ADD FOREIGN KEY(meeting_id) REFERENCES meetingT(id);
 
+-- Create trigger
+
+-- definition trigger not null for meeting.default_projector_agenda_item_list_ids against projectorT.used_as_default_projector_for_agenda_item_list_in_meeting_id
+CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_agenda_item_list_ids AFTER INSERT ON projectorT INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_agenda_item_list_ids', 'used_as_default_projector_for_agenda_item_list_in_meeting_id');
+
+CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_agenda_item_list_ids AFTER UPDATE OF used_as_default_projector_for_agenda_item_list_in_meeting_id OR DELETE ON projectorT
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_agenda_item_list_ids', 'used_as_default_projector_for_agenda_item_list_in_meeting_id');
+
+
+-- definition trigger not null for meeting.default_projector_topic_ids against projectorT.used_as_default_projector_for_topic_in_meeting_id
+CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_topic_ids AFTER INSERT ON projectorT INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_topic_ids', 'used_as_default_projector_for_topic_in_meeting_id');
+
+CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_topic_ids AFTER UPDATE OF used_as_default_projector_for_topic_in_meeting_id OR DELETE ON projectorT
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_topic_ids', 'used_as_default_projector_for_topic_in_meeting_id');
+
+
+-- definition trigger not null for meeting.default_projector_list_of_speakers_ids against projectorT.used_as_default_projector_for_list_of_speakers_in_meeting_id
+CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_list_of_speakers_ids AFTER INSERT ON projectorT INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_list_of_speakers_ids', 'used_as_default_projector_for_list_of_speakers_in_meeting_id');
+
+CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_list_of_speakers_ids AFTER UPDATE OF used_as_default_projector_for_list_of_speakers_in_meeting_id OR DELETE ON projectorT
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_list_of_speakers_ids', 'used_as_default_projector_for_list_of_speakers_in_meeting_id');
+
+
+-- definition trigger not null for meeting.default_projector_current_list_of_speakers_ids against projectorT.used_as_default_projector_for_current_los_in_meeting_id
+CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_current_list_of_speakers_ids AFTER INSERT ON projectorT INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_current_list_of_speakers_ids', 'used_as_default_projector_for_current_los_in_meeting_id');
+
+CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_current_list_of_speakers_ids AFTER UPDATE OF used_as_default_projector_for_current_los_in_meeting_id OR DELETE ON projectorT
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_current_list_of_speakers_ids', 'used_as_default_projector_for_current_los_in_meeting_id');
+
+
+-- definition trigger not null for meeting.default_projector_motion_ids against projectorT.used_as_default_projector_for_motion_in_meeting_id
+CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_motion_ids AFTER INSERT ON projectorT INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_motion_ids', 'used_as_default_projector_for_motion_in_meeting_id');
+
+CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_motion_ids AFTER UPDATE OF used_as_default_projector_for_motion_in_meeting_id OR DELETE ON projectorT
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_motion_ids', 'used_as_default_projector_for_motion_in_meeting_id');
+
+
+-- definition trigger not null for meeting.default_projector_amendment_ids against projectorT.used_as_default_projector_for_amendment_in_meeting_id
+CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_amendment_ids AFTER INSERT ON projectorT INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_amendment_ids', 'used_as_default_projector_for_amendment_in_meeting_id');
+
+CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_amendment_ids AFTER UPDATE OF used_as_default_projector_for_amendment_in_meeting_id OR DELETE ON projectorT
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_amendment_ids', 'used_as_default_projector_for_amendment_in_meeting_id');
+
+
+-- definition trigger not null for meeting.default_projector_motion_block_ids against projectorT.used_as_default_projector_for_motion_block_in_meeting_id
+CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_motion_block_ids AFTER INSERT ON projectorT INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_motion_block_ids', 'used_as_default_projector_for_motion_block_in_meeting_id');
+
+CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_motion_block_ids AFTER UPDATE OF used_as_default_projector_for_motion_block_in_meeting_id OR DELETE ON projectorT
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_motion_block_ids', 'used_as_default_projector_for_motion_block_in_meeting_id');
+
+
+-- definition trigger not null for meeting.default_projector_assignment_ids against projectorT.used_as_default_projector_for_assignment_in_meeting_id
+CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_assignment_ids AFTER INSERT ON projectorT INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_assignment_ids', 'used_as_default_projector_for_assignment_in_meeting_id');
+
+CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_assignment_ids AFTER UPDATE OF used_as_default_projector_for_assignment_in_meeting_id OR DELETE ON projectorT
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_assignment_ids', 'used_as_default_projector_for_assignment_in_meeting_id');
+
+
+-- definition trigger not null for meeting.default_projector_mediafile_ids against projectorT.used_as_default_projector_for_mediafile_in_meeting_id
+CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_mediafile_ids AFTER INSERT ON projectorT INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_mediafile_ids', 'used_as_default_projector_for_mediafile_in_meeting_id');
+
+CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_mediafile_ids AFTER UPDATE OF used_as_default_projector_for_mediafile_in_meeting_id OR DELETE ON projectorT
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_mediafile_ids', 'used_as_default_projector_for_mediafile_in_meeting_id');
+
+
+-- definition trigger not null for meeting.default_projector_message_ids against projectorT.used_as_default_projector_for_message_in_meeting_id
+CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_message_ids AFTER INSERT ON projectorT INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_message_ids', 'used_as_default_projector_for_message_in_meeting_id');
+
+CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_message_ids AFTER UPDATE OF used_as_default_projector_for_message_in_meeting_id OR DELETE ON projectorT
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_message_ids', 'used_as_default_projector_for_message_in_meeting_id');
+
+
+-- definition trigger not null for meeting.default_projector_countdown_ids against projectorT.used_as_default_projector_for_countdown_in_meeting_id
+CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_countdown_ids AFTER INSERT ON projectorT INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_countdown_ids', 'used_as_default_projector_for_countdown_in_meeting_id');
+
+CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_countdown_ids AFTER UPDATE OF used_as_default_projector_for_countdown_in_meeting_id OR DELETE ON projectorT
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_countdown_ids', 'used_as_default_projector_for_countdown_in_meeting_id');
+
+
+-- definition trigger not null for meeting.default_projector_assignment_poll_ids against projectorT.used_as_default_projector_for_assignment_poll_in_meeting_id
+CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_assignment_poll_ids AFTER INSERT ON projectorT INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_assignment_poll_ids', 'used_as_default_projector_for_assignment_poll_in_meeting_id');
+
+CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_assignment_poll_ids AFTER UPDATE OF used_as_default_projector_for_assignment_poll_in_meeting_id OR DELETE ON projectorT
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_assignment_poll_ids', 'used_as_default_projector_for_assignment_poll_in_meeting_id');
+
+
+-- definition trigger not null for meeting.default_projector_motion_poll_ids against projectorT.used_as_default_projector_for_motion_poll_in_meeting_id
+CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_motion_poll_ids AFTER INSERT ON projectorT INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_motion_poll_ids', 'used_as_default_projector_for_motion_poll_in_meeting_id');
+
+CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_motion_poll_ids AFTER UPDATE OF used_as_default_projector_for_motion_poll_in_meeting_id OR DELETE ON projectorT
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_motion_poll_ids', 'used_as_default_projector_for_motion_poll_in_meeting_id');
+
+
+-- definition trigger not null for meeting.default_projector_poll_ids against projectorT.used_as_default_projector_for_poll_in_meeting_id
+CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_poll_ids AFTER INSERT ON projectorT INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_poll_ids', 'used_as_default_projector_for_poll_in_meeting_id');
+
+CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_poll_ids AFTER UPDATE OF used_as_default_projector_for_poll_in_meeting_id OR DELETE ON projectorT
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_poll_ids', 'used_as_default_projector_for_poll_in_meeting_id');
+
+
 
 /*   Relation-list infos
 Generated: What will be generated for left field
@@ -2090,7 +2287,7 @@ Model.Field -> Model.Field
 */
 
 /*
-ns+: => organization/committee_ids:-> -
+SQL ns+: => organization/committee_ids:-> -
 SQL nt:1t => organization/active_meeting_ids:-> meeting/is_active_in_organization_id
 SQL nt:1t => organization/archived_meeting_ids:-> meeting/is_archived_in_organization_id
 SQL nt:1t => organization/template_meeting_ids:-> meeting/template_for_organization_id
@@ -2209,20 +2406,20 @@ FIELD 1tR:1t => meeting/reference_projector_id:-> projector/used_as_reference_pr
 FIELD 1r: => meeting/list_of_speakers_countdown_id:-> projector_countdown/
 FIELD 1r: => meeting/poll_countdown_id:-> projector_countdown/
 SQL nt:1GtR => meeting/projection_ids:-> projection/content_object_id
-*** ntR:1t => meeting/default_projector_agenda_item_list_ids:-> projector/used_as_default_projector_for_agenda_item_list_in_meeting_id
-*** ntR:1t => meeting/default_projector_topic_ids:-> projector/used_as_default_projector_for_topic_in_meeting_id
-*** ntR:1t => meeting/default_projector_list_of_speakers_ids:-> projector/used_as_default_projector_for_list_of_speakers_in_meeting_id
-*** ntR:1t => meeting/default_projector_current_list_of_speakers_ids:-> projector/used_as_default_projector_for_current_los_in_meeting_id
-*** ntR:1t => meeting/default_projector_motion_ids:-> projector/used_as_default_projector_for_motion_in_meeting_id
-*** ntR:1t => meeting/default_projector_amendment_ids:-> projector/used_as_default_projector_for_amendment_in_meeting_id
-*** ntR:1t => meeting/default_projector_motion_block_ids:-> projector/used_as_default_projector_for_motion_block_in_meeting_id
-*** ntR:1t => meeting/default_projector_assignment_ids:-> projector/used_as_default_projector_for_assignment_in_meeting_id
-*** ntR:1t => meeting/default_projector_mediafile_ids:-> projector/used_as_default_projector_for_mediafile_in_meeting_id
-*** ntR:1t => meeting/default_projector_message_ids:-> projector/used_as_default_projector_for_message_in_meeting_id
-*** ntR:1t => meeting/default_projector_countdown_ids:-> projector/used_as_default_projector_for_countdown_in_meeting_id
-*** ntR:1t => meeting/default_projector_assignment_poll_ids:-> projector/used_as_default_projector_for_assignment_poll_in_meeting_id
-*** ntR:1t => meeting/default_projector_motion_poll_ids:-> projector/used_as_default_projector_for_motion_poll_in_meeting_id
-*** ntR:1t => meeting/default_projector_poll_ids:-> projector/used_as_default_projector_for_poll_in_meeting_id
+SQL ntR:1t => meeting/default_projector_agenda_item_list_ids:-> projector/used_as_default_projector_for_agenda_item_list_in_meeting_id
+SQL ntR:1t => meeting/default_projector_topic_ids:-> projector/used_as_default_projector_for_topic_in_meeting_id
+SQL ntR:1t => meeting/default_projector_list_of_speakers_ids:-> projector/used_as_default_projector_for_list_of_speakers_in_meeting_id
+SQL ntR:1t => meeting/default_projector_current_list_of_speakers_ids:-> projector/used_as_default_projector_for_current_los_in_meeting_id
+SQL ntR:1t => meeting/default_projector_motion_ids:-> projector/used_as_default_projector_for_motion_in_meeting_id
+SQL ntR:1t => meeting/default_projector_amendment_ids:-> projector/used_as_default_projector_for_amendment_in_meeting_id
+SQL ntR:1t => meeting/default_projector_motion_block_ids:-> projector/used_as_default_projector_for_motion_block_in_meeting_id
+SQL ntR:1t => meeting/default_projector_assignment_ids:-> projector/used_as_default_projector_for_assignment_in_meeting_id
+SQL ntR:1t => meeting/default_projector_mediafile_ids:-> projector/used_as_default_projector_for_mediafile_in_meeting_id
+SQL ntR:1t => meeting/default_projector_message_ids:-> projector/used_as_default_projector_for_message_in_meeting_id
+SQL ntR:1t => meeting/default_projector_countdown_ids:-> projector/used_as_default_projector_for_countdown_in_meeting_id
+SQL ntR:1t => meeting/default_projector_assignment_poll_ids:-> projector/used_as_default_projector_for_assignment_poll_in_meeting_id
+SQL ntR:1t => meeting/default_projector_motion_poll_ids:-> projector/used_as_default_projector_for_motion_poll_in_meeting_id
+SQL ntR:1t => meeting/default_projector_poll_ids:-> projector/used_as_default_projector_for_poll_in_meeting_id
 FIELD 1tR:1t => meeting/default_group_id:-> group/default_group_for_meeting_id
 FIELD 1r: => meeting/admin_group_id:-> group/
 
@@ -2445,20 +2642,20 @@ SQL nt:1t => projector/current_projection_ids:-> projection/current_projector_id
 SQL nt:1t => projector/preview_projection_ids:-> projection/preview_projector_id
 SQL nt:1t => projector/history_projection_ids:-> projection/history_projector_id
 SQL 1t:1tR => projector/used_as_reference_projector_meeting_id:-> meeting/reference_projector_id
-*** 1t:ntR => projector/used_as_default_projector_for_agenda_item_list_in_meeting_id:-> meeting/default_projector_agenda_item_list_ids
-*** 1t:ntR => projector/used_as_default_projector_for_topic_in_meeting_id:-> meeting/default_projector_topic_ids
-*** 1t:ntR => projector/used_as_default_projector_for_list_of_speakers_in_meeting_id:-> meeting/default_projector_list_of_speakers_ids
-*** 1t:ntR => projector/used_as_default_projector_for_current_los_in_meeting_id:-> meeting/default_projector_current_list_of_speakers_ids
-*** 1t:ntR => projector/used_as_default_projector_for_motion_in_meeting_id:-> meeting/default_projector_motion_ids
-*** 1t:ntR => projector/used_as_default_projector_for_amendment_in_meeting_id:-> meeting/default_projector_amendment_ids
-*** 1t:ntR => projector/used_as_default_projector_for_motion_block_in_meeting_id:-> meeting/default_projector_motion_block_ids
-*** 1t:ntR => projector/used_as_default_projector_for_assignment_in_meeting_id:-> meeting/default_projector_assignment_ids
-*** 1t:ntR => projector/used_as_default_projector_for_mediafile_in_meeting_id:-> meeting/default_projector_mediafile_ids
-*** 1t:ntR => projector/used_as_default_projector_for_message_in_meeting_id:-> meeting/default_projector_message_ids
-*** 1t:ntR => projector/used_as_default_projector_for_countdown_in_meeting_id:-> meeting/default_projector_countdown_ids
-*** 1t:ntR => projector/used_as_default_projector_for_assignment_poll_in_meeting_id:-> meeting/default_projector_assignment_poll_ids
-*** 1t:ntR => projector/used_as_default_projector_for_motion_poll_in_meeting_id:-> meeting/default_projector_motion_poll_ids
-*** 1t:ntR => projector/used_as_default_projector_for_poll_in_meeting_id:-> meeting/default_projector_poll_ids
+FIELD 1t:ntR => projector/used_as_default_projector_for_agenda_item_list_in_meeting_id:-> meeting/default_projector_agenda_item_list_ids
+FIELD 1t:ntR => projector/used_as_default_projector_for_topic_in_meeting_id:-> meeting/default_projector_topic_ids
+FIELD 1t:ntR => projector/used_as_default_projector_for_list_of_speakers_in_meeting_id:-> meeting/default_projector_list_of_speakers_ids
+FIELD 1t:ntR => projector/used_as_default_projector_for_current_los_in_meeting_id:-> meeting/default_projector_current_list_of_speakers_ids
+FIELD 1t:ntR => projector/used_as_default_projector_for_motion_in_meeting_id:-> meeting/default_projector_motion_ids
+FIELD 1t:ntR => projector/used_as_default_projector_for_amendment_in_meeting_id:-> meeting/default_projector_amendment_ids
+FIELD 1t:ntR => projector/used_as_default_projector_for_motion_block_in_meeting_id:-> meeting/default_projector_motion_block_ids
+FIELD 1t:ntR => projector/used_as_default_projector_for_assignment_in_meeting_id:-> meeting/default_projector_assignment_ids
+FIELD 1t:ntR => projector/used_as_default_projector_for_mediafile_in_meeting_id:-> meeting/default_projector_mediafile_ids
+FIELD 1t:ntR => projector/used_as_default_projector_for_message_in_meeting_id:-> meeting/default_projector_message_ids
+FIELD 1t:ntR => projector/used_as_default_projector_for_countdown_in_meeting_id:-> meeting/default_projector_countdown_ids
+FIELD 1t:ntR => projector/used_as_default_projector_for_assignment_poll_in_meeting_id:-> meeting/default_projector_assignment_poll_ids
+FIELD 1t:ntR => projector/used_as_default_projector_for_motion_poll_in_meeting_id:-> meeting/default_projector_motion_poll_ids
+FIELD 1t:ntR => projector/used_as_default_projector_for_poll_in_meeting_id:-> meeting/default_projector_poll_ids
 FIELD 1tR:nt => projector/meeting_id:-> meeting/projector_ids
 
 FIELD 1t:nt => projection/current_projector_id:-> projector/current_projection_ids

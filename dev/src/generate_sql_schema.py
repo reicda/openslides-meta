@@ -23,6 +23,7 @@ class SchemaZoneTexts(TypedDict, total=False):
     view: str
     alter_table: str
     alter_table_final: str
+    create_trigger: str
     undecided: str
     final_info: str
 
@@ -99,6 +100,7 @@ class GenerateCodeBlocks:
         table_name_code: str = ""
         view_name_code: str = ""
         alter_table_final_code: str = ""
+        create_trigger_code: str = ""
         final_info_code: str = ""
         missing_handled_attributes = []
         im_table_code = ""
@@ -142,6 +144,8 @@ class GenerateCodeBlocks:
                 view_name_code += Helper.get_view_body_end(table_name, code)
             if code := schema_zone_texts["alter_table_final"]:
                 alter_table_final_code += code + "\n"
+            if code := schema_zone_texts["create_trigger"]:
+                create_trigger_code += code + "\n"
             if code := schema_zone_texts["final_info"]:
                 final_info_code += code + "\n"
             for im_table in cls.intermediate_tables.values():
@@ -155,6 +159,7 @@ class GenerateCodeBlocks:
             final_info_code,
             missing_handled_attributes,
             im_table_code,
+            create_trigger_code,
         )
 
     @classmethod
@@ -299,13 +304,6 @@ class GenerateCodeBlocks:
     def get_relation_list_type(
         cls, table_name: str, fname: str, fdata: dict[str, Any], type_: str
     ) -> SchemaZoneTexts:
-        """
-        ("relation-list", "relation"): False,
-        ("relation-list", "relation-list"): "decide_alphabetical", # True if own < foreign.collectionfield
-        ("relation-list", "generic-relation"): False,
-        ("relation-list", "generic-relation-list"): False,
-        ("relation-list", None): "decide_sql",   // True or Exception
-        """
         text: SchemaZoneTexts = {}
         own_table_field = TableFieldType(table_name, fname, fdata)
         foreign_table_field: TableFieldType = (
@@ -334,6 +332,7 @@ class GenerateCodeBlocks:
                         )
             if sql := fdata.get("sql", ""):
                 text["view"] = sql + ",\n"
+                final_info = "SQL " + final_info
             else:
                 foreign_table_column = cast(str, foreign_table_field.column)
                 foreign_table_field_ref_id = cast(str, foreign_table_field.ref_column)
@@ -391,6 +390,9 @@ class GenerateCodeBlocks:
                     foreign_table_column,
                     foreign_table_ref_column,
                 )
+                if own_table_field.field_def.get("required"):
+                    text["create_trigger"] = cls.get_trigger_check_not_null_for_relation_lists(
+                        own_table_field.table, own_table_field.column, foreign_table_field.table, foreign_table_field.column)
                 final_info = "SQL " + final_info
         text["final_info"] = final_info
         return text
@@ -413,6 +415,21 @@ class GenerateCodeBlocks:
             return f"(select array_agg({foreign_letter}.{foreign_table_ref_column}) from {foreign_table_name} {foreign_letter} where {foreign_letter}.{foreign_table_column} = {table_letter}.{own_ref_column}) as {fname},\n"
         else:
             return f"(select array_agg({foreign_letter}.{foreign_table_ref_column}) from {foreign_table_name} {foreign_letter}) as {fname},\n"
+
+    @classmethod
+    def get_trigger_check_not_null_for_relation_lists(cls, own_table:str, own_column:str, foreign_table:str, foreign_column) -> str:
+        foreign_table_t = HelperGetNames.get_table_name(foreign_table)
+        return dedent(
+            f"""
+            -- definition trigger not null for {own_table}.{own_column} against {foreign_table_t}.{foreign_column}
+            CREATE CONSTRAINT TRIGGER {HelperGetNames.get_not_null_rel_list_insert_trigger_name(own_table, own_column)} AFTER INSERT ON {foreign_table_t} INITIALLY DEFERRED
+            FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('{own_table}', '{own_column}', '{foreign_column}');
+
+            CREATE CONSTRAINT TRIGGER {HelperGetNames.get_not_null_rel_list_upd_del_trigger_name(own_table, own_column)} AFTER UPDATE OF {foreign_column} OR DELETE ON {foreign_table_t}
+            FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('{own_table}', '{own_column}', '{foreign_column}');
+
+            """
+        )
 
     @classmethod
     def get_generic_relation_type(
@@ -546,6 +563,47 @@ class Helper:
         """
         -- schema_relational.sql for initial database setup OpenSlides
         -- Code generated. DO NOT EDIT.
+        CREATE EXTENSION hstore;  -- included in standard postgres-installations, check for alpine
+
+        create or replace function check_not_null_for_relation_lists() returns trigger as $not_null_trigger$
+        -- usage with 3 parameters IN TRIGGER DEFINITION:
+        -- table_name of field to check, usually a field in a view
+        -- column_name of field to check
+        -- foreign_key field name of triggered table, that will be used to SELECT the values to check the not null 
+        DECLARE
+            table_name TEXT;
+            column_name TEXT;
+            foreign_key TEXT;
+            foreign_id INTEGER;
+            counted INTEGER;
+        begin
+            table_name = TG_ARGV[0];
+            column_name = TG_ARGV[1];
+            foreign_key = TG_ARGV[2];
+
+            IF (TG_OP = 'INSERT') THEN
+                foreign_id := hstore(NEW) -> foreign_key;
+                IF (foreign_id is NOT NULL) THEN
+                    foreign_id = NULL; -- no need to ask DB
+                END IF;
+            ELSIF (TG_OP = 'UPDATE') THEN
+                foreign_id := hstore(NEW) -> foreign_key;
+                IF (foreign_id is NULL) THEN
+                    foreign_id = OLD.used_as_default_projector_for_topic_in_meeting_id;
+                END IF;
+            ELSIF (TG_OP = 'DELETE') THEN
+                foreign_id := hstore(OLD) -> foreign_key;
+            END IF;
+
+            IF (foreign_id IS NOT NULL) THEN
+                EXECUTE format('SELECT array_length(%I, 1) FROM %I where id = %s', column_name, table_name, foreign_id) INTO counted;
+                IF (counted is NULL) THEN
+                    RAISE EXCEPTION 'Trigger % Exception: NOT NULL CONSTRAINT VIOLATED for %.%', TG_NAME, table_name, column_name;
+                END IF;
+            END IF;
+            RETURN NULL;  -- AFTER TRIGGER needs no return
+        end;
+        $not_null_trigger$ language plpgsql;
 
         CREATE OR REPLACE FUNCTION truncate_tables(username IN VARCHAR) RETURNS void AS $$
         DECLARE
@@ -904,8 +962,6 @@ class Helper:
             if field["type"] == "relation":
                 result = "1"
             elif field["type"] == "relation-list":
-                if field.get("required"):
-                    error = True
                 result = "n"
             elif field["type"] == "generic-relation":
                 result = "1G"
@@ -1190,6 +1246,7 @@ def main() -> None:
         final_info_code,
         missing_handled_attributes,
         im_table_code,
+        create_trigger_code,
     ) = GenerateCodeBlocks.generate_the_code()
     with open(DESTINATION, "w") as dest:
         dest.write(Helper.FILE_TEMPLATE)
@@ -1204,6 +1261,8 @@ def main() -> None:
         dest.write(view_name_code)
         dest.write("-- Alter table relations\n")
         dest.write(alter_table_code)
+        dest.write("-- Create trigger\n")
+        dest.write(create_trigger_code)
         dest.write(Helper.RELATION_LIST_AGENDA)
         dest.write("/*\n")
         dest.write(final_info_code)

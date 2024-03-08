@@ -19,7 +19,9 @@ services:
         networks:
             - postgres
     postgres:
-        image: postgres:15
+        build:
+            context: .
+            dockerfile: Dockerfile-postgres
         environment:
             - POSTGRES_USER=openslides
             - POSTGRES_PASSWORD=openslides

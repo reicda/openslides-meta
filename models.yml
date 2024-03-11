@@ -2438,6 +2438,7 @@ motion:
     required: true
     restriction_mode: C
     constant: true
+    unique: meeting_id, sequential_number
   title:
     type: string
     required: true
@@ -2533,10 +2534,9 @@ motion:
     to: motion/all_origin_ids
     restriction_mode: A
   identical_motion_ids:
-    type: int[]
+    type: dummy[]
     # type relation-list
-    # to: motion/identical_motion_ids
-    description: Changed from relation-list to int[], because can't still be genmerated
+    description: with psycopg 3.2.0 we could use the as_string method without cursor and change dummy to number.Changed from relation-list to number[], because can't still be generated
     restriction_mode: C
   state_id:
     type: relation

@@ -2508,6 +2508,7 @@ motion:
     type: relation-list
     to: motion/lead_motion_id
     equal_fields: meeting_id
+    on_delete: CASCADE
     restriction_mode: C
   sort_parent_id:
     type: relation

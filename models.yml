@@ -1011,7 +1011,7 @@ meeting:
     type: boolean
     default: False
     restriction_mode: B
-  list_of_speakers_hide_secondary_contributions_count:
+  list_of_speakers_hide_contribution_count:
     type: boolean
     default: False
     restriction_mode: B

@@ -280,7 +280,7 @@ user:
     restriction_mode: A
   last_email_sent:
     type: timestamp
-    restriction_mode: D
+    restriction_mode: B
   is_demo_user:
     type: boolean
     restriction_mode: A

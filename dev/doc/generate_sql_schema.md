@@ -5,7 +5,7 @@ The length will be checked by the following methods on generating the sql-schema
 
 ## The type TableFieldType
 
-This type is used sometimes for the parameters of the methods. It can be build by it's constructor or as convinience with the static method **get_definitions_from_foreign**, which takes as parametes
+This type is used sometimes for the parameters of the methods. It can be build by it's constructor or as convinience with the static method **get_definitions_from_foreign**, which takes as parameters
 the str-values from the **to**- and the **reference**-Attribut from models field description.
 
 It contains the **table_name**, **fname** for the field name, the dictionary **tfield** from the models.yml with all attributes and a **ref_column**, usually filled with **id** for the foreign-key definitions.
@@ -39,3 +39,5 @@ The name of the intermediate table for **generic-relation-list** versus **relati
 * table name of the generic-relation-list field
 * _ Constant divider
 * field name of the generic-relation-list field
+
+## Attributes and rules

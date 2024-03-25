@@ -34,6 +34,7 @@ class BaseTestCase(TestCase):
         env = os.environ
         try:
             cls.db_connection = psycopg.connect(f"dbname='{db_name}' user='{env['POSTGRES_USER']}' host='{env['POSTGRES_HOST']}' password='{env['PGPASSWORD']}'", autocommit=autocommit, row_factory=row_factory)
+            cls.db_connection.isolation_level = psycopg.IsolationLevel.SERIALIZABLE
         except Exception as e:
             raise Exception(f"Cannot connect to postgres: {e.message}")
 

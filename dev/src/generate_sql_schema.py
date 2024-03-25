@@ -43,6 +43,11 @@ class SQL_Delete_Update_Options(str, Enum):
     NO_ACTION = "NO ACTION"
 
 
+class FIELD_SQL_ERROR_ENUM(Enum):
+    FIELD = 1
+    SQL = 2
+    ERROR = 3
+
 class SubstDict(TypedDict, total=False):
     """dict for substitutions of field templates"""
 
@@ -952,10 +957,11 @@ class Helper:
         return subst, text
 
     @staticmethod
-    def get_cardinality(field: dict[str, Any] | None) -> tuple[str, bool]:
+    def get_cardinality(field_all: TableFieldType) -> tuple[str, bool]:
         """
         Returns string with cardinality string (1, 1G, n or nG= Cardinality, G=Generatic-relation, r=reference, t=to, s=sql, R=required)
         """
+        field = field_all.field_def
         if field:
             required = bool(field.get("required"))
             sql = "sql" in field
@@ -1004,15 +1010,30 @@ class Helper:
     @staticmethod
     def check_relation_definitions(
         own_field: TableFieldType, foreign_fields: list[TableFieldType]
-    ) -> tuple[str, bool]:
+    ) -> tuple[FIELD_SQL_ERROR_ENUM, bool, str, str|None]:
+        """
+        Decides for the own-field,
+          - whether it is a field, a sql-expression or is there an error
+          - relation-list and generic-relation-list are always sql-expressions.
+            True significates, that it is the pimary that creates the intermediate table
+
+        Also checks relational behaviour and produces the informative relation line and in
+        case of an error an error text
+
+        Returns:
+        - field, sql, error => enum
+        - primary field (only relevant for list fields)
+        - complete relational text with FIELD, SQL or *** in front
+        - error line if error
+        """
         error = False
         text = ""
-        own_c, tmp_error = Helper.get_cardinality(own_field.field_def)
+        own_c, tmp_error = Helper.get_cardinality(own_field)
         error = error or tmp_error
         foreigns_c = []
         foreign_collectionfields = []
         for foreign_field in foreign_fields:
-            foreign_c, tmp_error = Helper.get_cardinality(foreign_field.field_def)
+            foreign_c, tmp_error = Helper.get_cardinality(foreign_field)
             if own_c == "1tR" and foreign_c == "1r":
                 raise Exception(
                     f"{own_field.table}.{own_field.column}:Change this in moduls.yml to 1tR:1t or 1t:1rR, the opposite side of a required can't build a sql with reference, but with to-attribut."
@@ -1021,6 +1042,9 @@ class Helper:
             error = error or tmp_error
             foreign_collectionfields.append(foreign_field.collectionfield)
 
+        # todo: generate_field_view_or_nothing hier einfügen, Rückgabe feld oder select
+        #    und bei listen auch primär, sekundär
+        #    Fehlertext hier auch erzeugen (2 zeiig in relliste)
         if error:
             text = "*** "
         text += f"{own_c}:{','.join(foreigns_c)} => {own_field.collectionfield}:-> {','.join(foreign_collectionfields)}\n"
@@ -1030,9 +1054,11 @@ class Helper:
     def generate_field_view_or_nothing(
         own: TableFieldType, foreign: TableFieldType
     ) -> bool:
-        """Decides, whether a relation field will be physical, view field or nothing
-        Returns True = if necessary build table, view or intermediate Tables etc.
-                False = do only extra
+        """
+        Decides for the own-field
+        - relation-list and generic-relation-list are always sql-expressions.
+          True significates, that it is the pimary that creates the intermediate table
+        - for relation and generic-relation True marks a field, False a sql-expression
         """
         decision_list = {
             ("relation", "relation"): "decide_primary_side",
@@ -1069,6 +1095,7 @@ class Helper:
                 f"Type combination not implemented: {own_type}:{foreign_type} on field {own.collectionfield}"
             )
         elif result == "decide_primary_side":
+            #TODO: mehr auf fehler checken
             if own.field_def.get("required", False) == foreign.field_def.get(
                 "required", False
             ):

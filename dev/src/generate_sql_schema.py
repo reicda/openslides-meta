@@ -178,7 +178,7 @@ class GenerateCodeBlocks:
         else:
             type_ = fdata.get("type", "")
         if type_ in FIELD_TYPES:
-            if (method := FIELD_TYPES[type_].get("method")):
+            if method := FIELD_TYPES[type_].get("method"):
                 return (method.__get__(cls), type_)  # returns the callable classmethod
             else:
                 text = "no method defined"
@@ -394,8 +394,14 @@ class GenerateCodeBlocks:
                     foreign_table_ref_column,
                 )
                 if own_table_field.field_def.get("required"):
-                    text["create_trigger"] = cls.get_trigger_check_not_null_for_relation_lists(
-                        own_table_field.table, own_table_field.column, foreign_table_field.table, foreign_table_field.column)
+                    text["create_trigger"] = (
+                        cls.get_trigger_check_not_null_for_relation_lists(
+                            own_table_field.table,
+                            own_table_field.column,
+                            foreign_table_field.table,
+                            foreign_table_field.column,
+                        )
+                    )
                 final_info = "SQL " + final_info
         text["final_info"] = final_info
         return text
@@ -420,7 +426,9 @@ class GenerateCodeBlocks:
             return f"(select array_agg({foreign_letter}.{foreign_table_ref_column}) from {foreign_table_name} {foreign_letter}) as {fname},\n"
 
     @classmethod
-    def get_trigger_check_not_null_for_relation_lists(cls, own_table:str, own_column:str, foreign_table:str, foreign_column) -> str:
+    def get_trigger_check_not_null_for_relation_lists(
+        cls, own_table: str, own_column: str, foreign_table: str, foreign_column
+    ) -> str:
         foreign_table_t = HelperGetNames.get_table_name(foreign_table)
         return dedent(
             f"""
@@ -572,7 +580,7 @@ class Helper:
         -- usage with 3 parameters IN TRIGGER DEFINITION:
         -- table_name of field to check, usually a field in a view
         -- column_name of field to check
-        -- foreign_key field name of triggered table, that will be used to SELECT the values to check the not null 
+        -- foreign_key field name of triggered table, that will be used to SELECT the values to check the not null.
         DECLARE
             table_name TEXT;
             column_name TEXT;
@@ -1006,7 +1014,9 @@ class Helper:
         for foreign_field in foreign_fields:
             foreign_c, tmp_error = Helper.get_cardinality(foreign_field.field_def)
             if own_c == "1tR" and foreign_c == "1r":
-                raise Exception(f"{own_field.table}.{own_field.column}:Change this in moduls.yml to 1tR:1t or 1t:1rR, the opposite side of a required can't build a sql with reference, but with to-attribut.")
+                raise Exception(
+                    f"{own_field.table}.{own_field.column}:Change this in moduls.yml to 1tR:1t or 1t:1rR, the opposite side of a required can't build a sql with reference, but with to-attribut."
+                )
             foreigns_c.append(foreign_c)
             error = error or tmp_error
             foreign_collectionfields.append(foreign_field.collectionfield)

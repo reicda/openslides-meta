@@ -346,7 +346,7 @@ class GenerateCodeBlocks:
                 foreign_table_field_ref_id = cast(str, foreign_table_field.ref_column)
                 if foreign_table_column or foreign_table_field_ref_id:
                     if (
-                        type_ := foreign_table_field.field_def.get("type")
+                        type_ := foreign_table_field.field_def.get("type", "")
                     ) == "generic-relation":
                         own_ref_column = own_table_field.ref_column
                         foreign_table_column += (
@@ -432,7 +432,7 @@ class GenerateCodeBlocks:
 
     @classmethod
     def get_trigger_check_not_null_for_relation_lists(
-        cls, own_table: str, own_column: str, foreign_table: str, foreign_column
+        cls, own_table: str, own_column: str, foreign_table: str, foreign_column: str
     ) -> str:
         foreign_table_t = HelperGetNames.get_table_name(foreign_table)
         return dedent(
@@ -451,7 +451,7 @@ class GenerateCodeBlocks:
     def get_generic_relation_type(
         cls, table_name: str, fname: str, fdata: dict[str, Any], type_: str
     ) -> SchemaZoneTexts:
-        text: SchemaZoneTexts = defaultdict(str)
+        text = cast(SchemaZoneTexts, defaultdict(str))
         own_table_field = TableFieldType(table_name, fname, fdata)
         foreign_table_fields: list[TableFieldType] = (
             ModelsHelper.get_definitions_from_foreign_list(
@@ -816,7 +816,7 @@ class Helper:
         to: str | None, reference: str | None
     ) -> tuple[str, str]:
         if reference:
-            result = Helper.ref_compiled.search(reference)
+            result = InternalHelper.ref_compiled.search(reference)
             if result is None:
                 return reference.strip(), "id"
             re_groups = result.groups()
@@ -1276,7 +1276,7 @@ def main() -> None:
     if len(sys.argv) > 1:
         file = sys.argv[1]
     else:
-        file = SOURCE
+        file = str(SOURCE)
 
     MODELS, checksum = InternalHelper.read_models_yml(file)
 

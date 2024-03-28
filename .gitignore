@@ -32,3 +32,5 @@ secrets/
 
 # code-workspaces
 *.code-workspace
+
+.gitignore

@@ -251,11 +251,11 @@ user:
   username:
     type: string
     required: true
-    restriction_mode: A
+    restriction_mode: B
   saml_id:
     type: string
     minLength: 1
-    restriction_mode: A
+    restriction_mode: B
     description: unique-key from IdP for SAML login
   pronoun:
     type: string
@@ -300,7 +300,7 @@ user:
     restriction_mode: A
   last_email_sent:
     type: timestamp
-    restriction_mode: D
+    restriction_mode: B
   is_demo_user:
     type: boolean
     restriction_mode: A
@@ -1021,6 +1021,10 @@ meeting:
     default: False
     restriction_mode: B
   list_of_speakers_show_first_contribution:
+    type: boolean
+    default: False
+    restriction_mode: B
+  list_of_speakers_hide_contribution_count:
     type: boolean
     default: False
     restriction_mode: B
@@ -2466,6 +2470,9 @@ motion:
     type: timestamp
     read_only: true
     restriction_mode: A
+  additional_submitter:
+    type: string
+    restriction_mode: C
 
   lead_motion_id:
     type: relation
@@ -2476,6 +2483,7 @@ motion:
     type: relation-list
     to: motion/lead_motion_id
     equal_fields: meeting_id
+    on_delete: CASCADE
     restriction_mode: C
   sort_parent_id:
     type: relation

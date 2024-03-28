@@ -15,17 +15,17 @@
 # Relations:
 #     - We have the following types: `relation`, `relation-list`, `generic-relation`
 #       and `generic-relation-list`. All relation-types with a `list`-suffix are **always** realized as sql-statements,
-#       in case of n:m-relations with an intermediary table. 
+#       in case of n:m-relations with an intermediary table.
 #     - Non-generic relations: The simple syntax for such a field
 #       `to: <collection>/<field>`. This is a reference to a collection-field, the "other" side of a relation.
 #           In the relational DB this will be a field in a view filled by an automatically generated sql.
 #           During the development of the relational db one relation can have a `to` and a `reference` property.
 #           In this case the `to` value is only used for historical reason, onky the `reference` property is used
-#           for the schema generation.  
+#           for the schema generation.
 #           If necessary the sql can be written manually, see `sql`.
 #       `reference: <collection(field1, ...)` This will create a foreign key constraint. Therefore a `reference` is
 #           the indicator for a real field in the table and you cannot use it for relation types with a `list` suffix.
-#           For some time there may be also a `to`-property for the relation, but for schema generation 
+#           For some time there may be also a `to`-property for the relation, but for schema generation
 #           the `reference` takes the prededence over the `to`.
 #       `deferred: true`: this field get the "INITIALLY DEFERRED" on it's foreign key definition
 #     - Generic relations: The difference to non-generic relations is that you have a
@@ -58,7 +58,7 @@
 # Additional properties:
 #     - The property `sql` can be filled manually with an sql-statement, which fills this field. This
 #       field can't be filled with an own vaue and is always defined in a view. You can use it on all
-#        field types, not only relations. 
+#        field types, not only relations.
 #     - The property `read_only` describes a field that can not be changed by an action.
 #     - The property `default` describes the default value that is used for new objects.
 #     - The property `required` describes that this field can not be null or an empty
@@ -169,6 +169,7 @@ organization:
     type: relation-list
     restriction_mode: B
     sql: (select array_agg(c.id) from committeeT c) as committee_ids
+    reference: committee
   active_meeting_ids:
     type: relation-list
     restriction_mode: B
@@ -486,11 +487,11 @@ organization_tag:
     constant: true
   name:
     type: string
-    required: True
+    required: true
     restriction_mode: A
   color:
     type: color
-    required: True
+    required: true
     restriction_mode: A
 
   tagged_ids:
@@ -3256,7 +3257,7 @@ poll:
     restriction_mode: A
   backend:
     type: string
-    required: True
+    required: true
     enum:
       - long
       - fast
@@ -4162,7 +4163,6 @@ chat_group:
     type: number
     default: 10000
     restriction_mode: A
-  
   chat_message_ids:
     type: relation-list
     to: chat_message/chat_group_id
@@ -4192,7 +4192,7 @@ chat_message:
     restriction_mode: A
     constant: true
   content:
-    type: HTMLStrict 
+    type: HTMLStrict
     required: true
     restriction_mode: A
   created:

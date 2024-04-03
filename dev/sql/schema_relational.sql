@@ -457,7 +457,6 @@ CREATE TABLE IF NOT EXISTS organizationT (
     saml_metadata_idp text,
     saml_metadata_sp text,
     saml_private_key text,
-    theme_id integer NOT NULL,
     users_email_sender varchar(256) DEFAULT 'OpenSlides',
     users_email_replyto varchar(256),
     users_email_subject varchar(256) DEFAULT 'OpenSlides access data',
@@ -600,7 +599,6 @@ CREATE TABLE IF NOT EXISTS committeeT (
     name varchar(256) NOT NULL,
     description text,
     external_id varchar(256),
-    default_meeting_id integer,
     user_ids integer[],
     forwarding_user_id integer
 );
@@ -766,29 +764,10 @@ This email was generated automatically.',
     poll_default_onehundred_percent_base enum_meeting_poll_default_onehundred_percent_base DEFAULT 'YNA',
     poll_default_backend enum_meeting_poll_default_backend DEFAULT 'fast',
     poll_couple_countdown boolean DEFAULT True,
-    logo_projector_main_id integer,
-    logo_projector_header_id integer,
-    logo_web_header_id integer,
-    logo_pdf_header_l_id integer,
-    logo_pdf_header_r_id integer,
-    logo_pdf_footer_l_id integer,
-    logo_pdf_footer_r_id integer,
-    logo_pdf_ballot_paper_id integer,
-    font_regular_id integer,
-    font_italic_id integer,
-    font_bold_id integer,
-    font_bold_italic_id integer,
-    font_monospace_id integer,
-    font_chyron_speaker_name_id integer,
-    font_projector_h1_id integer,
-    font_projector_h2_id integer,
     committee_id integer NOT NULL,
     user_ids integer[],
     reference_projector_id integer NOT NULL,
-    list_of_speakers_countdown_id integer,
-    poll_countdown_id integer,
-    default_group_id integer NOT NULL,
-    admin_group_id integer
+    default_group_id integer NOT NULL
 );
 
 
@@ -1197,7 +1176,6 @@ CREATE TABLE IF NOT EXISTS pollT (
     content_object_id_assignment_id integer GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'assignment' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
     content_object_id_topic_id integer GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'topic' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
     CONSTRAINT valid_content_object_id_part1 CHECK (split_part(content_object_id, '/', 1) IN ('motion','assignment','topic')),
-    global_option_id integer,
     meeting_id integer NOT NULL
 );
 
@@ -1617,14 +1595,10 @@ CREATE TABLE IF NOT EXISTS nm_chat_group_write_group_ids_groupT (
 -- View definitions
 
 CREATE OR REPLACE VIEW organization AS SELECT *,
-(select array_agg(c.id) from committeeT c) as committee_ids,
 (select array_agg(m.id) from meetingT m where m.is_active_in_organization_id = o.id) as active_meeting_ids,
 (select array_agg(m.id) from meetingT m where m.is_archived_in_organization_id = o.id) as archived_meeting_ids,
 (select array_agg(m.id) from meetingT m where m.template_for_organization_id = o.id) as template_meeting_ids,
-(select array_agg(ot.id) from organization_tagT ot) as organization_tag_ids,
-(select array_agg(t.id) from themeT t) as theme_ids,
-(select array_agg(m.id) from mediafileT m where m.owner_id_organization_id = o.id) as mediafile_ids,
-(select array_agg(u.id) from userT u) as user_ids
+(select array_agg(m.id) from mediafileT m where m.owner_id_organization_id = o.id) as mediafile_ids
 FROM organizationT o;
 
 
@@ -1659,11 +1633,6 @@ FROM meeting_userT m;
 CREATE OR REPLACE VIEW organization_tag AS SELECT *,
 (select array_agg(g.id) from gm_organization_tag_tagged_idsT g where g.organization_tag_id = o.id) as tagged_ids
 FROM organization_tagT o;
-
-
-CREATE OR REPLACE VIEW theme AS SELECT *,
-(select o.id from organizationT o where o.theme_id = t.id) as theme_for_organization_id
-FROM themeT t;
 
 
 CREATE OR REPLACE VIEW committee AS SELECT *,
@@ -1718,7 +1687,6 @@ CREATE OR REPLACE VIEW meeting AS SELECT *,
 (select array_agg(c.id) from chat_groupT c where c.meeting_id = m.id) as chat_group_ids,
 (select array_agg(c.id) from chat_messageT c where c.meeting_id = m.id) as chat_message_ids,
 (select array_agg(s.id) from structure_levelT s where s.meeting_id = m.id) as structure_level_ids,
-(select c.id from committeeT c where c.default_meeting_id = m.id) as default_meeting_for_committee_id,
 (select array_agg(g.organization_tag_id) from gm_organization_tag_tagged_idsT g where g.tagged_id_meeting_id = m.id) as organization_tag_ids,
 (select array_agg(n.user_id) from nm_meeting_present_user_ids_userT n where n.meeting_id = m.id) as present_user_ids,
 (select array_agg(p.id) from projectionT p where p.content_object_id_meeting_id = m.id) as projection_ids,
@@ -1748,7 +1716,6 @@ FROM structure_levelT s;
 CREATE OR REPLACE VIEW group_ AS SELECT *,
 (select array_agg(n.meeting_user_id) from nm_group_meeting_user_ids_meeting_userT n where n.group_id = g.id) as meeting_user_ids,
 (select m.id from meetingT m where m.default_group_id = g.id) as default_group_for_meeting_id,
-(select m.id from meetingT m where m.admin_group_id = g.id) as admin_group_for_meeting_id,
 (select array_agg(n.mediafile_id) from nm_group_mediafile_access_group_ids_mediafileT n where n.group_id = g.id) as mediafile_access_group_ids,
 (select array_agg(n.mediafile_id) from nm_group_mediafile_inherited_access_group_ids_mediafileT n where n.group_id = g.id) as mediafile_inherited_access_group_ids,
 (select array_agg(n.motion_comment_section_id) from nm_group_read_comment_section_ids_motion_comment_sectionT n where n.group_id = g.id) as read_comment_section_ids,
@@ -1877,7 +1844,6 @@ FROM pollT p;
 
 
 CREATE OR REPLACE VIEW option AS SELECT *,
-(select p.id from pollT p where p.global_option_id = o.id) as used_as_global_option_in_poll_id,
 (select array_agg(v.id) from voteT v where v.option_id = o.id) as vote_ids
 FROM optionT o;
 
@@ -1905,23 +1871,7 @@ CREATE OR REPLACE VIEW mediafile AS SELECT *,
 (select array_agg(m1.id) from mediafileT m1 where m1.parent_id = m.id) as child_ids,
 (select l.id from list_of_speakersT l where l.content_object_id_mediafile_id = m.id) as list_of_speakers_id,
 (select array_agg(p.id) from projectionT p where p.content_object_id_mediafile_id = m.id) as projection_ids,
-(select array_agg(g.id) from gm_mediafile_attachment_idsT g where g.mediafile_id = m.id) as attachment_ids,
-(select m1.id from meetingT m1 where m1.logo_projector_main_id = m.id) as used_as_logo_projector_main_in_meeting_id,
-(select m1.id from meetingT m1 where m1.logo_projector_header_id = m.id) as used_as_logo_projector_header_in_meeting_id,
-(select m1.id from meetingT m1 where m1.logo_web_header_id = m.id) as used_as_logo_web_header_in_meeting_id,
-(select m1.id from meetingT m1 where m1.logo_pdf_header_l_id = m.id) as used_as_logo_pdf_header_l_in_meeting_id,
-(select m1.id from meetingT m1 where m1.logo_pdf_header_r_id = m.id) as used_as_logo_pdf_header_r_in_meeting_id,
-(select m1.id from meetingT m1 where m1.logo_pdf_footer_l_id = m.id) as used_as_logo_pdf_footer_l_in_meeting_id,
-(select m1.id from meetingT m1 where m1.logo_pdf_footer_r_id = m.id) as used_as_logo_pdf_footer_r_in_meeting_id,
-(select m1.id from meetingT m1 where m1.logo_pdf_ballot_paper_id = m.id) as used_as_logo_pdf_ballot_paper_in_meeting_id,
-(select m1.id from meetingT m1 where m1.font_regular_id = m.id) as used_as_font_regular_in_meeting_id,
-(select m1.id from meetingT m1 where m1.font_italic_id = m.id) as used_as_font_italic_in_meeting_id,
-(select m1.id from meetingT m1 where m1.font_bold_id = m.id) as used_as_font_bold_in_meeting_id,
-(select m1.id from meetingT m1 where m1.font_bold_italic_id = m.id) as used_as_font_bold_italic_in_meeting_id,
-(select m1.id from meetingT m1 where m1.font_monospace_id = m.id) as used_as_font_monospace_in_meeting_id,
-(select m1.id from meetingT m1 where m1.font_chyron_speaker_name_id = m.id) as used_as_font_chyron_speaker_name_in_meeting_id,
-(select m1.id from meetingT m1 where m1.font_projector_h1_id = m.id) as used_as_font_projector_h1_in_meeting_id,
-(select m1.id from meetingT m1 where m1.font_projector_h2_id = m.id) as used_as_font_projector_h2_in_meeting_id
+(select array_agg(g.id) from gm_mediafile_attachment_idsT g where g.mediafile_id = m.id) as attachment_ids
 FROM mediafileT m;
 
 
@@ -1939,9 +1889,7 @@ FROM projector_messageT p;
 
 
 CREATE OR REPLACE VIEW projector_countdown AS SELECT *,
-(select array_agg(p1.id) from projectionT p1 where p1.content_object_id_projector_countdown_id = p.id) as projection_ids,
-(select m.id from meetingT m where m.list_of_speakers_countdown_id = p.id) as used_as_list_of_speakers_countdown_meeting_id,
-(select m.id from meetingT m where m.poll_countdown_id = p.id) as used_as_poll_countdown_meeting_id
+(select array_agg(p1.id) from projectionT p1 where p1.content_object_id_projector_countdown_id = p.id) as projection_ids
 FROM projector_countdownT p;
 
 
@@ -1952,13 +1900,10 @@ CREATE OR REPLACE VIEW chat_group AS SELECT *,
 FROM chat_groupT c;
 
 -- Alter table relations
-ALTER TABLE organizationT ADD FOREIGN KEY(theme_id) REFERENCES themeT(id);
-
 ALTER TABLE meeting_userT ADD FOREIGN KEY(user_id) REFERENCES userT(id);
 ALTER TABLE meeting_userT ADD FOREIGN KEY(meeting_id) REFERENCES meetingT(id);
 ALTER TABLE meeting_userT ADD FOREIGN KEY(vote_delegated_to_id) REFERENCES meeting_userT(id);
 
-ALTER TABLE committeeT ADD FOREIGN KEY(default_meeting_id) REFERENCES meetingT(id);
 ALTER TABLE committeeT ADD FOREIGN KEY(forwarding_user_id) REFERENCES userT(id);
 
 ALTER TABLE meetingT ADD FOREIGN KEY(is_active_in_organization_id) REFERENCES organizationT(id);
@@ -1967,28 +1912,9 @@ ALTER TABLE meetingT ADD FOREIGN KEY(template_for_organization_id) REFERENCES or
 ALTER TABLE meetingT ADD FOREIGN KEY(motions_default_workflow_id) REFERENCES motion_workflowT(id) INITIALLY DEFERRED;
 ALTER TABLE meetingT ADD FOREIGN KEY(motions_default_amendment_workflow_id) REFERENCES motion_workflowT(id) INITIALLY DEFERRED;
 ALTER TABLE meetingT ADD FOREIGN KEY(motions_default_statute_amendment_workflow_id) REFERENCES motion_workflowT(id) INITIALLY DEFERRED;
-ALTER TABLE meetingT ADD FOREIGN KEY(logo_projector_main_id) REFERENCES mediafileT(id);
-ALTER TABLE meetingT ADD FOREIGN KEY(logo_projector_header_id) REFERENCES mediafileT(id);
-ALTER TABLE meetingT ADD FOREIGN KEY(logo_web_header_id) REFERENCES mediafileT(id);
-ALTER TABLE meetingT ADD FOREIGN KEY(logo_pdf_header_l_id) REFERENCES mediafileT(id);
-ALTER TABLE meetingT ADD FOREIGN KEY(logo_pdf_header_r_id) REFERENCES mediafileT(id);
-ALTER TABLE meetingT ADD FOREIGN KEY(logo_pdf_footer_l_id) REFERENCES mediafileT(id);
-ALTER TABLE meetingT ADD FOREIGN KEY(logo_pdf_footer_r_id) REFERENCES mediafileT(id);
-ALTER TABLE meetingT ADD FOREIGN KEY(logo_pdf_ballot_paper_id) REFERENCES mediafileT(id);
-ALTER TABLE meetingT ADD FOREIGN KEY(font_regular_id) REFERENCES mediafileT(id);
-ALTER TABLE meetingT ADD FOREIGN KEY(font_italic_id) REFERENCES mediafileT(id);
-ALTER TABLE meetingT ADD FOREIGN KEY(font_bold_id) REFERENCES mediafileT(id);
-ALTER TABLE meetingT ADD FOREIGN KEY(font_bold_italic_id) REFERENCES mediafileT(id);
-ALTER TABLE meetingT ADD FOREIGN KEY(font_monospace_id) REFERENCES mediafileT(id);
-ALTER TABLE meetingT ADD FOREIGN KEY(font_chyron_speaker_name_id) REFERENCES mediafileT(id);
-ALTER TABLE meetingT ADD FOREIGN KEY(font_projector_h1_id) REFERENCES mediafileT(id);
-ALTER TABLE meetingT ADD FOREIGN KEY(font_projector_h2_id) REFERENCES mediafileT(id);
 ALTER TABLE meetingT ADD FOREIGN KEY(committee_id) REFERENCES committeeT(id);
 ALTER TABLE meetingT ADD FOREIGN KEY(reference_projector_id) REFERENCES projectorT(id) INITIALLY DEFERRED;
-ALTER TABLE meetingT ADD FOREIGN KEY(list_of_speakers_countdown_id) REFERENCES projector_countdownT(id);
-ALTER TABLE meetingT ADD FOREIGN KEY(poll_countdown_id) REFERENCES projector_countdownT(id);
 ALTER TABLE meetingT ADD FOREIGN KEY(default_group_id) REFERENCES groupT(id) INITIALLY DEFERRED;
-ALTER TABLE meetingT ADD FOREIGN KEY(admin_group_id) REFERENCES groupT(id) INITIALLY DEFERRED;
 
 ALTER TABLE structure_levelT ADD FOREIGN KEY(meeting_id) REFERENCES meetingT(id);
 
@@ -2081,7 +2007,6 @@ ALTER TABLE motion_statute_paragraphT ADD FOREIGN KEY(meeting_id) REFERENCES mee
 ALTER TABLE pollT ADD FOREIGN KEY(content_object_id_motion_id) REFERENCES motionT(id);
 ALTER TABLE pollT ADD FOREIGN KEY(content_object_id_assignment_id) REFERENCES assignmentT(id);
 ALTER TABLE pollT ADD FOREIGN KEY(content_object_id_topic_id) REFERENCES topicT(id);
-ALTER TABLE pollT ADD FOREIGN KEY(global_option_id) REFERENCES optionT(id);
 ALTER TABLE pollT ADD FOREIGN KEY(meeting_id) REFERENCES meetingT(id);
 
 ALTER TABLE optionT ADD FOREIGN KEY(poll_id) REFERENCES pollT(id);
@@ -2287,15 +2212,20 @@ Model.Field -> Model.Field
 */
 
 /*
-SQL nrs: => organization/committee_ids:-> committee/
+*** nrs: => organization/committee_ids:-> committee/
+    Field with reference temporarely needs also to-attribute
 SQL nt:1r => organization/active_meeting_ids:-> meeting/is_active_in_organization_id
 SQL nt:1r => organization/archived_meeting_ids:-> meeting/is_archived_in_organization_id
 SQL nt:1r => organization/template_meeting_ids:-> meeting/template_for_organization_id
-SQL nr: => organization/organization_tag_ids:-> organization_tag/
-FIELD 1rR: => organization/theme_id:-> theme/
-SQL nr: => organization/theme_ids:-> theme/
+*** nr: => organization/organization_tag_ids:-> organization_tag/
+    Field with reference temporarely needs also to-attribute
+*** 1rR: => organization/theme_id:-> theme/
+    Field with reference temporarely needs also to-attribute
+*** nr: => organization/theme_ids:-> theme/
+    Field with reference temporarely needs also to-attribute
 SQL nt:1GrR => organization/mediafile_ids:-> mediafile/owner_id
-SQL nr: => organization/user_ids:-> user/
+*** nr: => organization/user_ids:-> user/
+    Field with reference temporarely needs also to-attribute
 
 SQL nt:nt => user/is_present_in_meeting_ids:-> meeting/present_user_ids
 SQL nt:nt => user/committee_management_ids:-> committee/manager_ids
@@ -2324,10 +2254,12 @@ SQL nt:nt => meeting_user/structure_level_ids:-> structure_level/meeting_user_id
 
 SQL nGt:nt,nt => organization_tag/tagged_ids:-> committee/organization_tag_ids,meeting/organization_tag_ids
 
-SQL 1t:1rR => theme/theme_for_organization_id:-> organization/theme_id
+*** 1t:1rR => theme/theme_for_organization_id:-> organization/theme_id
+    Field with reference temporarely needs also to-attribute
 
 SQL nt:1rR => committee/meeting_ids:-> meeting/committee_id
-FIELD 1r: => committee/default_meeting_id:-> meeting/
+*** 1r: => committee/default_meeting_id:-> meeting/
+    Field with reference temporarely needs also to-attribute
 SQL nt:nt => committee/manager_ids:-> user/committee_management_ids
 SQL nt:nt => committee/forward_to_committee_ids:-> committee/receive_forwardings_from_committee_ids
 SQL nt:nt => committee/receive_forwardings_from_committee_ids:-> committee/forward_to_committee_ids
@@ -2382,29 +2314,48 @@ SQL nt:1rR => meeting/personal_note_ids:-> personal_note/meeting_id
 SQL nt:1rR => meeting/chat_group_ids:-> chat_group/meeting_id
 SQL nt:1rR => meeting/chat_message_ids:-> chat_message/meeting_id
 SQL nt:1rR => meeting/structure_level_ids:-> structure_level/meeting_id
-FIELD 1r: => meeting/logo_projector_main_id:-> mediafile/
-FIELD 1r: => meeting/logo_projector_header_id:-> mediafile/
-FIELD 1r: => meeting/logo_web_header_id:-> mediafile/
-FIELD 1r: => meeting/logo_pdf_header_l_id:-> mediafile/
-FIELD 1r: => meeting/logo_pdf_header_r_id:-> mediafile/
-FIELD 1r: => meeting/logo_pdf_footer_l_id:-> mediafile/
-FIELD 1r: => meeting/logo_pdf_footer_r_id:-> mediafile/
-FIELD 1r: => meeting/logo_pdf_ballot_paper_id:-> mediafile/
-FIELD 1r: => meeting/font_regular_id:-> mediafile/
-FIELD 1r: => meeting/font_italic_id:-> mediafile/
-FIELD 1r: => meeting/font_bold_id:-> mediafile/
-FIELD 1r: => meeting/font_bold_italic_id:-> mediafile/
-FIELD 1r: => meeting/font_monospace_id:-> mediafile/
-FIELD 1r: => meeting/font_chyron_speaker_name_id:-> mediafile/
-FIELD 1r: => meeting/font_projector_h1_id:-> mediafile/
-FIELD 1r: => meeting/font_projector_h2_id:-> mediafile/
+*** 1r: => meeting/logo_projector_main_id:-> mediafile/
+    Field with reference temporarely needs also to-attribute
+*** 1r: => meeting/logo_projector_header_id:-> mediafile/
+    Field with reference temporarely needs also to-attribute
+*** 1r: => meeting/logo_web_header_id:-> mediafile/
+    Field with reference temporarely needs also to-attribute
+*** 1r: => meeting/logo_pdf_header_l_id:-> mediafile/
+    Field with reference temporarely needs also to-attribute
+*** 1r: => meeting/logo_pdf_header_r_id:-> mediafile/
+    Field with reference temporarely needs also to-attribute
+*** 1r: => meeting/logo_pdf_footer_l_id:-> mediafile/
+    Field with reference temporarely needs also to-attribute
+*** 1r: => meeting/logo_pdf_footer_r_id:-> mediafile/
+    Field with reference temporarely needs also to-attribute
+*** 1r: => meeting/logo_pdf_ballot_paper_id:-> mediafile/
+    Field with reference temporarely needs also to-attribute
+*** 1r: => meeting/font_regular_id:-> mediafile/
+    Field with reference temporarely needs also to-attribute
+*** 1r: => meeting/font_italic_id:-> mediafile/
+    Field with reference temporarely needs also to-attribute
+*** 1r: => meeting/font_bold_id:-> mediafile/
+    Field with reference temporarely needs also to-attribute
+*** 1r: => meeting/font_bold_italic_id:-> mediafile/
+    Field with reference temporarely needs also to-attribute
+*** 1r: => meeting/font_monospace_id:-> mediafile/
+    Field with reference temporarely needs also to-attribute
+*** 1r: => meeting/font_chyron_speaker_name_id:-> mediafile/
+    Field with reference temporarely needs also to-attribute
+*** 1r: => meeting/font_projector_h1_id:-> mediafile/
+    Field with reference temporarely needs also to-attribute
+*** 1r: => meeting/font_projector_h2_id:-> mediafile/
+    Field with reference temporarely needs also to-attribute
 FIELD 1rR: => meeting/committee_id:-> committee/
-SQL 1t:1r => meeting/default_meeting_for_committee_id:-> committee/default_meeting_id
+*** 1t:1r => meeting/default_meeting_for_committee_id:-> committee/default_meeting_id
+    Field with reference temporarely needs also to-attribute
 SQL nt:nGt => meeting/organization_tag_ids:-> organization_tag/tagged_ids
 SQL nt:nt => meeting/present_user_ids:-> user/is_present_in_meeting_ids
 FIELD 1rR: => meeting/reference_projector_id:-> projector/
-FIELD 1r: => meeting/list_of_speakers_countdown_id:-> projector_countdown/
-FIELD 1r: => meeting/poll_countdown_id:-> projector_countdown/
+*** 1r: => meeting/list_of_speakers_countdown_id:-> projector_countdown/
+    Field with reference temporarely needs also to-attribute
+*** 1r: => meeting/poll_countdown_id:-> projector_countdown/
+    Field with reference temporarely needs also to-attribute
 SQL nt:1GrR => meeting/projection_ids:-> projection/content_object_id
 SQL ntR:1r => meeting/default_projector_agenda_item_list_ids:-> projector/used_as_default_projector_for_agenda_item_list_in_meeting_id
 SQL ntR:1r => meeting/default_projector_topic_ids:-> projector/used_as_default_projector_for_topic_in_meeting_id
@@ -2421,7 +2372,8 @@ SQL ntR:1r => meeting/default_projector_assignment_poll_ids:-> projector/used_as
 SQL ntR:1r => meeting/default_projector_motion_poll_ids:-> projector/used_as_default_projector_for_motion_poll_in_meeting_id
 SQL ntR:1r => meeting/default_projector_poll_ids:-> projector/used_as_default_projector_for_poll_in_meeting_id
 FIELD 1rR: => meeting/default_group_id:-> group/
-FIELD 1r: => meeting/admin_group_id:-> group/
+*** 1r: => meeting/admin_group_id:-> group/
+    Field with reference temporarely needs also to-attribute
 
 SQL nt:nt => structure_level/meeting_user_ids:-> meeting_user/structure_level_ids
 SQL nt:1rR => structure_level/structure_level_list_of_speakers_ids:-> structure_level_list_of_speakers/structure_level_id
@@ -2429,7 +2381,8 @@ FIELD 1rR: => structure_level/meeting_id:-> meeting/
 
 SQL nt:nt => group/meeting_user_ids:-> meeting_user/group_ids
 SQL 1t:1rR => group/default_group_for_meeting_id:-> meeting/default_group_id
-SQL 1t:1r => group/admin_group_for_meeting_id:-> meeting/admin_group_id
+*** 1t:1r => group/admin_group_for_meeting_id:-> meeting/admin_group_id
+    Field with reference temporarely needs also to-attribute
 SQL nt:nt => group/mediafile_access_group_ids:-> mediafile/access_group_ids
 SQL nt:nt => group/mediafile_inherited_access_group_ids:-> mediafile/inherited_access_group_ids
 SQL nt:nt => group/read_comment_section_ids:-> motion_comment_section/read_group_ids
@@ -2575,14 +2528,16 @@ FIELD 1rR: => motion_statute_paragraph/meeting_id:-> meeting/
 
 FIELD 1GrR:,, => poll/content_object_id:-> motion/,assignment/,topic/
 SQL nt:1r => poll/option_ids:-> option/poll_id
-FIELD 1r: => poll/global_option_id:-> option/
+*** 1r: => poll/global_option_id:-> option/
+    Field with reference temporarely needs also to-attribute
 SQL nt:nt => poll/voted_ids:-> user/poll_voted_ids
 SQL nt:nt => poll/entitled_group_ids:-> group/poll_ids
 SQL nt:1GrR => poll/projection_ids:-> projection/content_object_id
 FIELD 1rR: => poll/meeting_id:-> meeting/
 
 FIELD 1r: => option/poll_id:-> poll/
-SQL 1t:1r => option/used_as_global_option_in_poll_id:-> poll/global_option_id
+*** 1t:1r => option/used_as_global_option_in_poll_id:-> poll/global_option_id
+    Field with reference temporarely needs also to-attribute
 SQL nt:1rR => option/vote_ids:-> vote/option_id
 FIELD 1Gr:,, => option/content_object_id:-> motion/,user/,poll_candidate_list/
 FIELD 1rR: => option/meeting_id:-> meeting/
@@ -2621,22 +2576,38 @@ SQL 1t:1GrR => mediafile/list_of_speakers_id:-> list_of_speakers/content_object_
 SQL nt:1GrR => mediafile/projection_ids:-> projection/content_object_id
 SQL nGt:nt,nt,nt => mediafile/attachment_ids:-> motion/attachment_ids,topic/attachment_ids,assignment/attachment_ids
 FIELD 1GrR:, => mediafile/owner_id:-> meeting/,organization/
-SQL 1t:1r => mediafile/used_as_logo_projector_main_in_meeting_id:-> meeting/logo_projector_main_id
-SQL 1t:1r => mediafile/used_as_logo_projector_header_in_meeting_id:-> meeting/logo_projector_header_id
-SQL 1t:1r => mediafile/used_as_logo_web_header_in_meeting_id:-> meeting/logo_web_header_id
-SQL 1t:1r => mediafile/used_as_logo_pdf_header_l_in_meeting_id:-> meeting/logo_pdf_header_l_id
-SQL 1t:1r => mediafile/used_as_logo_pdf_header_r_in_meeting_id:-> meeting/logo_pdf_header_r_id
-SQL 1t:1r => mediafile/used_as_logo_pdf_footer_l_in_meeting_id:-> meeting/logo_pdf_footer_l_id
-SQL 1t:1r => mediafile/used_as_logo_pdf_footer_r_in_meeting_id:-> meeting/logo_pdf_footer_r_id
-SQL 1t:1r => mediafile/used_as_logo_pdf_ballot_paper_in_meeting_id:-> meeting/logo_pdf_ballot_paper_id
-SQL 1t:1r => mediafile/used_as_font_regular_in_meeting_id:-> meeting/font_regular_id
-SQL 1t:1r => mediafile/used_as_font_italic_in_meeting_id:-> meeting/font_italic_id
-SQL 1t:1r => mediafile/used_as_font_bold_in_meeting_id:-> meeting/font_bold_id
-SQL 1t:1r => mediafile/used_as_font_bold_italic_in_meeting_id:-> meeting/font_bold_italic_id
-SQL 1t:1r => mediafile/used_as_font_monospace_in_meeting_id:-> meeting/font_monospace_id
-SQL 1t:1r => mediafile/used_as_font_chyron_speaker_name_in_meeting_id:-> meeting/font_chyron_speaker_name_id
-SQL 1t:1r => mediafile/used_as_font_projector_h1_in_meeting_id:-> meeting/font_projector_h1_id
-SQL 1t:1r => mediafile/used_as_font_projector_h2_in_meeting_id:-> meeting/font_projector_h2_id
+*** 1t:1r => mediafile/used_as_logo_projector_main_in_meeting_id:-> meeting/logo_projector_main_id
+    Field with reference temporarely needs also to-attribute
+*** 1t:1r => mediafile/used_as_logo_projector_header_in_meeting_id:-> meeting/logo_projector_header_id
+    Field with reference temporarely needs also to-attribute
+*** 1t:1r => mediafile/used_as_logo_web_header_in_meeting_id:-> meeting/logo_web_header_id
+    Field with reference temporarely needs also to-attribute
+*** 1t:1r => mediafile/used_as_logo_pdf_header_l_in_meeting_id:-> meeting/logo_pdf_header_l_id
+    Field with reference temporarely needs also to-attribute
+*** 1t:1r => mediafile/used_as_logo_pdf_header_r_in_meeting_id:-> meeting/logo_pdf_header_r_id
+    Field with reference temporarely needs also to-attribute
+*** 1t:1r => mediafile/used_as_logo_pdf_footer_l_in_meeting_id:-> meeting/logo_pdf_footer_l_id
+    Field with reference temporarely needs also to-attribute
+*** 1t:1r => mediafile/used_as_logo_pdf_footer_r_in_meeting_id:-> meeting/logo_pdf_footer_r_id
+    Field with reference temporarely needs also to-attribute
+*** 1t:1r => mediafile/used_as_logo_pdf_ballot_paper_in_meeting_id:-> meeting/logo_pdf_ballot_paper_id
+    Field with reference temporarely needs also to-attribute
+*** 1t:1r => mediafile/used_as_font_regular_in_meeting_id:-> meeting/font_regular_id
+    Field with reference temporarely needs also to-attribute
+*** 1t:1r => mediafile/used_as_font_italic_in_meeting_id:-> meeting/font_italic_id
+    Field with reference temporarely needs also to-attribute
+*** 1t:1r => mediafile/used_as_font_bold_in_meeting_id:-> meeting/font_bold_id
+    Field with reference temporarely needs also to-attribute
+*** 1t:1r => mediafile/used_as_font_bold_italic_in_meeting_id:-> meeting/font_bold_italic_id
+    Field with reference temporarely needs also to-attribute
+*** 1t:1r => mediafile/used_as_font_monospace_in_meeting_id:-> meeting/font_monospace_id
+    Field with reference temporarely needs also to-attribute
+*** 1t:1r => mediafile/used_as_font_chyron_speaker_name_in_meeting_id:-> meeting/font_chyron_speaker_name_id
+    Field with reference temporarely needs also to-attribute
+*** 1t:1r => mediafile/used_as_font_projector_h1_in_meeting_id:-> meeting/font_projector_h1_id
+    Field with reference temporarely needs also to-attribute
+*** 1t:1r => mediafile/used_as_font_projector_h2_in_meeting_id:-> meeting/font_projector_h2_id
+    Field with reference temporarely needs also to-attribute
 
 SQL nt:1r => projector/current_projection_ids:-> projection/current_projector_id
 SQL nt:1r => projector/preview_projection_ids:-> projection/preview_projector_id
@@ -2668,8 +2639,10 @@ SQL nt:1GrR => projector_message/projection_ids:-> projection/content_object_id
 FIELD 1rR: => projector_message/meeting_id:-> meeting/
 
 SQL nt:1GrR => projector_countdown/projection_ids:-> projection/content_object_id
-SQL 1t:1r => projector_countdown/used_as_list_of_speakers_countdown_meeting_id:-> meeting/list_of_speakers_countdown_id
-SQL 1t:1r => projector_countdown/used_as_poll_countdown_meeting_id:-> meeting/poll_countdown_id
+*** 1t:1r => projector_countdown/used_as_list_of_speakers_countdown_meeting_id:-> meeting/list_of_speakers_countdown_id
+    Field with reference temporarely needs also to-attribute
+*** 1t:1r => projector_countdown/used_as_poll_countdown_meeting_id:-> meeting/poll_countdown_id
+    Field with reference temporarely needs also to-attribute
 FIELD 1rR: => projector_countdown/meeting_id:-> meeting/
 
 SQL nt:1rR => chat_group/chat_message_ids:-> chat_message/chat_group_id
@@ -2683,4 +2656,4 @@ FIELD 1rR: => chat_message/meeting_id:-> meeting/
 
 */
 
-/*   Missing attribute handling for constant, sql, reference, on_delete, equal_fields, unique, deferred */
+/*   Missing attribute handling for constant, sql, on_delete, equal_fields, unique, deferred */

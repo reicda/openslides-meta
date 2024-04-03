@@ -917,14 +917,16 @@ class Helper:
             reference = bool(field.get("reference"))
 
             # general rules of inconsistent field descriptions on field level
-            if field.get("sql") == "":
-                error = "sql attribute may not be empty"
+            if reference and not to:  # temporaray rule to keep all to-attributes
+                error = "Field with reference temporarely needs also to-attribute\n"
+            elif field.get("sql") == "":
+                error = "sql attribute may not be empty\n"
             elif required and sql:
-                error = "Field with attribute sql cannot be required"
+                error = "Field with attribute sql cannot be required\n"
             elif not (to or reference):
-                error = "Relation field must have `to` or `reference` attribut set"
+                error = "Relation field must have `to` or `reference` attribut set\n"
             elif field["type"] == "generic-relation-list" and required:
-                error = "generic-relation-list cannot be required: not implemented"
+                error = "generic-relation-list cannot be required: not implemented\n"
 
             if field["type"] == "relation":
                 result = "1"
@@ -978,16 +980,13 @@ class Helper:
         foreign_collectionfields = []
         for foreign_field in foreign_fields:
             foreign_c, tmp_error = Helper.get_cardinality(foreign_field)
-            if own_c == "1tR" and foreign_c == "1r":
-                raise Exception(
-                    f"{own_field.table}.{own_field.column}:Change this in moduls.yml to 1rR:1t or 1t:1rR, the opposite side of a required can't build a sql with reference, but with to-attribut."
-                )
             foreigns_c.append(foreign_c)
             error = error or tmp_error
             foreign_collectionfields.append(foreign_field.collectionfield)
 
         if error:
             state = FIELD_SQL_ERROR_ENUM.ERROR
+            primary = False
         else:
             for i, foreign_field in enumerate(foreign_fields):
                 if i == 0:

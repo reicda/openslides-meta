@@ -23,10 +23,10 @@
 #           In this case the `to` value is only used for historical reason, onky the `reference` property is used
 #           for the schema generation.
 #           If necessary the sql can be written manually, see `sql`.
-#       `reference: <collection(field1, ...)` This will create a foreign key constraint. Therefore a `reference` is
+#       `reference: <collection(field1, ...)`. If only collection is given, `id` will be assumed. This will create a foreign key constraint. Therefore a `reference` is
 #           the indicator for a real field in the table and you cannot use it for relation types with a `list` suffix.
 #           For some time there may be also a `to`-property for the relation, but for schema generation
-#           the `reference` takes the prededence over the `to`.
+#           the `reference` takes the precedence over the `to`.
 #       `deferred: true`: this field get the "INITIALLY DEFERRED" on it's foreign key definition
 #     - Generic relations: The difference to non-generic relations is that you have a
 #       list of possible fields, so `to` can either hold multiple collections (if the
@@ -406,12 +406,14 @@ meeting_user:
 
   user_id:
     type: relation
+    reference: user
     to: user/meeting_user_ids
     required: true
     restriction_mode: A
     constant: true
   meeting_id:
     type: relation
+    reference: meeting(id)
     to: meeting/meeting_user_ids
     required: true
     restriction_mode: A
@@ -456,6 +458,7 @@ meeting_user:
     restriction_mode: A
   vote_delegated_to_id:
     type: relation
+    reference: meeting_user(id)
     to: meeting_user/vote_delegations_from_ids
     equal_fields: meeting_id
     restriction_mode: A
@@ -714,6 +717,7 @@ committee:
     restriction_mode: B
   forwarding_user_id:
     type: relation
+    reference: user
     to: user/forwarding_committee_ids
     restriction_mode: B
   organization_tag_ids:
@@ -748,11 +752,13 @@ meeting:
     required: true
   is_active_in_organization_id:
     type: relation
+    reference: organization
     to: organization/active_meeting_ids
     restriction_mode: A
     description: Backrelation and boolean flag at once
   is_archived_in_organization_id:
     type: relation
+    reference: organization
     to: organization/archived_meeting_ids
     restriction_mode: A
     description: Backrelation and boolean flag at once
@@ -801,6 +807,7 @@ meeting:
   # System
   template_for_organization_id:
     type: relation
+    reference: organization
     to: organization/template_meeting_ids
     restriction_mode: B
   enable_anonymous:
@@ -1079,16 +1086,19 @@ meeting:
   # Motions
   motions_default_workflow_id:
     type: relation
+    reference: motion_workflow
     to: motion_workflow/default_workflow_meeting_id
     required: true
     restriction_mode: B
   motions_default_amendment_workflow_id:
     type: relation
+    reference: motion_workflow
     to: motion_workflow/default_amendment_workflow_meeting_id
     required: true
     restriction_mode: B
   motions_default_statute_amendment_workflow_id:
     type: relation
+    reference: motion_workflow
     to: motion_workflow/default_statute_amendment_workflow_meeting_id
     required: true
     restriction_mode: B
@@ -1736,6 +1746,7 @@ meeting:
   # Other relations
   committee_id:
     type: relation
+    reference: committee
     to: committee/meeting_ids
     required: true
     restriction_mode: B
@@ -1759,6 +1770,7 @@ meeting:
     restriction_mode: B
   reference_projector_id:
     type: relation
+    reference: projector
     to: projector/used_as_reference_projector_meeting_id
     required: true
     restriction_mode: B
@@ -1847,6 +1859,7 @@ meeting:
     required: true
   default_group_id:
     type: relation
+    reference: group(id)
     to: group/default_group_for_meeting_id
     required: true
     restriction_mode: B
@@ -1884,6 +1897,7 @@ structure_level:
   meeting_id:
     type: relation
     required: true
+    reference: meeting
     to: meeting/structure_level_ids
     restriction_mode: A
 
@@ -2001,22 +2015,27 @@ group:
     restriction_mode: A
   used_as_motion_poll_default_id:
     type: relation
+    reference: meeting
     to: meeting/motion_poll_default_group_ids
     restriction_mode: A
   used_as_assignment_poll_default_id:
     type: relation
+    reference: meeting
     to: meeting/assignment_poll_default_group_ids
     restriction_mode: A
   used_as_topic_poll_default_id:
     type: relation
+    reference: meeting
     to: meeting/topic_poll_default_group_ids
     restriction_mode: A
   used_as_poll_default_id:
     type: relation
+    reference: meeting
     to: meeting/poll_default_group_ids
     restriction_mode: A
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/group_ids
     required: true
     restriction_mode: A
@@ -2036,6 +2055,7 @@ personal_note:
 
   meeting_user_id:
     type: relation
+    reference: meeting_user
     to: meeting_user/personal_note_ids
     equal_fields: meeting_id
     restriction_mode: A
@@ -2043,6 +2063,8 @@ personal_note:
     constant: true
   content_object_id:
     type: generic-relation
+    reference:
+      - motion
     to:
       collections:
         - motion
@@ -2052,6 +2074,7 @@ personal_note:
     constant: true
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/personal_note_ids
     required: true
     restriction_mode: A
@@ -2079,6 +2102,7 @@ tag:
     restriction_mode: A
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/tag_ids
     required: true
     restriction_mode: A
@@ -2136,6 +2160,11 @@ agenda_item:
 
   content_object_id:
     type: generic-relation
+    reference:
+      - motion
+      - motion_block
+      - assignment
+      - topic
     to:
       collections:
         - motion
@@ -2149,6 +2178,7 @@ agenda_item:
     constant: true
   parent_id:
     type: relation
+    reference: agenda_item
     to: agenda_item/child_ids
     equal_fields: meeting_id
     restriction_mode: A
@@ -2170,6 +2200,7 @@ agenda_item:
     restriction_mode: A
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/agenda_item_ids
     required: true
     restriction_mode: A
@@ -2194,6 +2225,12 @@ list_of_speakers:
 
   content_object_id:
     type: generic-relation
+    reference:
+      - motion
+      - motion_block
+      - assignment
+      - topic
+      - mediafile
     to:
       collections:
         - motion
@@ -2226,6 +2263,7 @@ list_of_speakers:
     restriction_mode: A
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/list_of_speakers_ids
     required: true
     restriction_mode: A
@@ -2241,12 +2279,14 @@ structure_level_list_of_speakers:
     required: true
     equal_fields: meeting_id
     restriction_mode: A
+    reference: structure_level
     to: structure_level/structure_level_list_of_speakers_ids
   list_of_speakers_id:
     type: relation
     required: true
     equal_fields: meeting_id
     restriction_mode: A
+    reference: list_of_speakers
     to: list_of_speakers/structure_level_list_of_speakers_ids
   speaker_ids:
     type: relation-list
@@ -2274,6 +2314,7 @@ structure_level_list_of_speakers:
     description: The current start time of a speaker for this structure_level. Is only set if a currently speaking speaker exists
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/structure_level_list_of_speakers_ids
     required: true
     restriction_mode: A
@@ -2293,6 +2334,7 @@ point_of_order_category:
     restriction_mode: A
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/point_of_order_category_ids
     required: true
     restriction_mode: A
@@ -2352,6 +2394,7 @@ speaker:
 
   list_of_speakers_id:
     type: relation
+    reference: list_of_speakers
     to: list_of_speakers/speaker_ids
     required: true
     equal_fields: meeting_id
@@ -2361,19 +2404,23 @@ speaker:
     type: relation
     equal_fields: meeting_id
     restriction_mode: A
+    reference: structure_level_list_of_speakers
     to: structure_level_list_of_speakers/speaker_ids
   meeting_user_id:
     type: relation
+    reference: meeting_user
     to: meeting_user/speaker_ids
     equal_fields: meeting_id
     restriction_mode: A
   point_of_order_category_id:
     type: relation
+    reference: point_of_order_category
     to: point_of_order_category/speaker_ids
     equal_fields: meeting_id
     restriction_mode: A
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/speaker_ids
     required: true
     restriction_mode: A
@@ -2434,6 +2481,7 @@ topic:
     restriction_mode: A
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/topic_ids
     required: true
     restriction_mode: A
@@ -2518,6 +2566,7 @@ motion:
 
   lead_motion_id:
     type: relation
+    reference: motion
     to: motion/amendment_ids
     equal_fields: meeting_id
     restriction_mode: C
@@ -2529,6 +2578,7 @@ motion:
     restriction_mode: C
   sort_parent_id:
     type: relation
+    reference: motion
     to: motion/sort_child_ids
     equal_fields: meeting_id
     restriction_mode: C
@@ -2539,10 +2589,12 @@ motion:
     restriction_mode: C
   origin_id:
     type: relation
+    reference: motion
     to: motion/derived_motion_ids # Note: The related motions may not be in the same meeting
     restriction_mode: A
   origin_meeting_id: # The meeting of the motion in origin_id, if any
     type: relation
+    reference: meeting
     to: meeting/forwarded_motion_ids
     restriction_mode: A
   derived_motion_ids:
@@ -2564,12 +2616,14 @@ motion:
     restriction_mode: C
   state_id:
     type: relation
+    reference: motion_state
     to: motion_state/motion_ids
     required: true
     equal_fields: meeting_id
     restriction_mode: C
   recommendation_id:
     type: relation
+    reference: motion_state
     to: motion_state/motion_recommendation_ids
     equal_fields: meeting_id
     restriction_mode: E
@@ -2601,11 +2655,13 @@ motion:
     restriction_mode: C
   category_id:
     type: relation
+    reference: motion_category
     to: motion_category/motion_ids
     equal_fields: meeting_id
     restriction_mode: C
   block_id:
     type: relation
+    reference: motion_block
     to: motion_block/motion_ids
     equal_fields: meeting_id
     restriction_mode: C
@@ -2652,6 +2708,7 @@ motion:
     restriction_mode: C
   statute_paragraph_id:
     type: relation
+    reference: motion_statute_paragraph
     to: motion_statute_paragraph/motion_ids
     equal_fields: meeting_id
     restriction_mode: C
@@ -2699,6 +2756,7 @@ motion:
     restriction_mode: C
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/motion_ids
     required: true
     restriction_mode: A
@@ -2714,11 +2772,13 @@ motion_submitter:
     restriction_mode: A
   meeting_user_id:
     type: relation
+    reference: meeting_user
     to: meeting_user/motion_submitter_ids
     restriction_mode: A
     required: true
   motion_id:
     type: relation
+    reference: motion
     to: motion/submitter_ids
     equal_fields: meeting_id
     restriction_mode: A
@@ -2726,6 +2786,7 @@ motion_submitter:
     constant: true
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/motion_submitter_ids
     required: true
     restriction_mode: A
@@ -2741,11 +2802,13 @@ motion_editor:
     restriction_mode: A
   meeting_user_id:
     type: relation
+    reference: meeting_user
     to: meeting_user/motion_editor_ids
     restriction_mode: A
     required: true
   motion_id:
     type: relation
+    reference: motion
     to: motion/editor_ids
     equal_fields: meeting_id
     restriction_mode: A
@@ -2753,6 +2816,7 @@ motion_editor:
     constant: true
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/motion_editor_ids
     required: true
     restriction_mode: A
@@ -2768,11 +2832,13 @@ motion_working_group_speaker:
     restriction_mode: A
   meeting_user_id:
     type: relation
+    reference: meeting_user
     to: meeting_user/motion_working_group_speaker_ids
     restriction_mode: A
     required: true
   motion_id:
     type: relation
+    reference: motion
     to: motion/working_group_speaker_ids
     equal_fields: meeting_id
     restriction_mode: A
@@ -2780,6 +2846,7 @@ motion_working_group_speaker:
     constant: true
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/motion_working_group_speaker_ids
     required: true
     restriction_mode: A
@@ -2796,6 +2863,7 @@ motion_comment:
 
   motion_id:
     type: relation
+    reference: motion
     to: motion/comment_ids
     required: true
     equal_fields: meeting_id
@@ -2803,6 +2871,7 @@ motion_comment:
     constant: true
   section_id:
     type: relation
+    reference: motion_comment_section
     to: motion_comment_section/comment_ids
     required: true
     equal_fields: meeting_id
@@ -2810,6 +2879,7 @@ motion_comment:
     constant: true
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/motion_comment_ids
     required: true
     restriction_mode: A
@@ -2857,6 +2927,7 @@ motion_comment_section:
     restriction_mode: A
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/motion_comment_section_ids
     required: true
     restriction_mode: A
@@ -2893,6 +2964,7 @@ motion_category:
 
   parent_id:
     type: relation
+    reference: motion_category
     to: motion_category/child_ids
     equal_fields: meeting_id
     restriction_mode: A
@@ -2908,6 +2980,7 @@ motion_category:
     restriction_mode: A
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/motion_category_ids
     required: true
     restriction_mode: A
@@ -2959,6 +3032,7 @@ motion_block:
     restriction_mode: A
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/motion_block_ids
     required: true
     restriction_mode: A
@@ -3007,6 +3081,7 @@ motion_change_recommendation:
 
   motion_id:
     type: relation
+    reference: motion
     to: motion/change_recommendation_ids
     required: true
     equal_fields: meeting_id
@@ -3014,6 +3089,7 @@ motion_change_recommendation:
     constant: true
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/motion_change_recommendation_ids
     required: true
     restriction_mode: A
@@ -3101,6 +3177,7 @@ motion_state:
     default: false
   submitter_withdraw_state_id:
     type: relation
+    reference: motion_state
     to: motion_state/submitter_withdraw_back_ids
     equal_fields:
       - meeting_id
@@ -3141,6 +3218,7 @@ motion_state:
     restriction_mode: A
   workflow_id:
     type: relation
+    reference: motion_workflow
     to: motion_workflow/state_ids
     required: true
     equal_fields: meeting_id
@@ -3153,6 +3231,7 @@ motion_state:
     restriction_mode: A
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/motion_state_ids
     required: true
     restriction_mode: A
@@ -3184,6 +3263,7 @@ motion_workflow:
     restriction_mode: A
   first_state_id:
     type: relation
+    reference: motion_state
     to: motion_state/first_state_of_workflow_id
     required: true
     equal_fields: meeting_id
@@ -3202,6 +3282,7 @@ motion_workflow:
     restriction_mode: A
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/motion_workflow_ids
     required: true
     restriction_mode: A
@@ -3238,6 +3319,7 @@ motion_statute_paragraph:
     restriction_mode: A
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/motion_statute_paragraph_ids
     required: true
     restriction_mode: A
@@ -3381,6 +3463,10 @@ poll:
     restriction_mode: B
   content_object_id:
     type: generic-relation
+    reference:
+      - motion
+      - assignment
+      - topic
     to:
       collections:
         - motion
@@ -3421,6 +3507,7 @@ poll:
     restriction_mode: A
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/poll_ids
     restriction_mode: A
     required: true
@@ -3450,6 +3537,7 @@ option:
 
   poll_id:
     type: relation
+    reference: poll
     to: poll/option_ids
     equal_fields: meeting_id
     restriction_mode: A
@@ -3468,6 +3556,10 @@ option:
     restriction_mode: A
   content_object_id:
     type: generic-relation
+    reference:
+      - motion
+      - user
+      - poll_candidate_list
     to:
       - motion/option_ids
       - user/option_ids
@@ -3477,6 +3569,7 @@ option:
     constant: true
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/option_ids
     required: true
     restriction_mode: A
@@ -3503,6 +3596,7 @@ vote:
 
   option_id:
     type: relation
+    reference: option
     to: option/vote_ids
     equal_fields: meeting_id
     required: true
@@ -3510,14 +3604,17 @@ vote:
     constant: true
   user_id:
     type: relation
+    reference: user(id)
     to: user/vote_ids
     restriction_mode: A
   delegated_user_id:
     type: relation
+    reference: user
     to: user/delegated_vote_ids
     restriction_mode: A
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/vote_ids
     required: true
     restriction_mode: A
@@ -3606,6 +3703,7 @@ assignment:
     restriction_mode: A
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/assignment_ids
     required: true
     restriction_mode: A
@@ -3623,6 +3721,7 @@ assignment_candidate:
 
   assignment_id:
     type: relation
+    reference: assignment
     to: assignment/candidate_ids
     equal_fields: meeting_id
     restriction_mode: A
@@ -3630,11 +3729,13 @@ assignment_candidate:
     constant: true
   meeting_user_id:
     type: relation
+    reference: meeting_user(id)
     to: meeting_user/assignment_candidate_ids
     restriction_mode: A
     constant: true
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/assignment_candidate_ids
     required: true
     restriction_mode: A
@@ -3654,6 +3755,7 @@ poll_candidate_list:
     equal_fields: meeting_id
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/poll_candidate_list_ids
     required: true
     restriction_mode: A
@@ -3673,6 +3775,7 @@ poll_candidate:
     constant: true
   poll_candidate_list_id:
     type: relation
+    reference: poll_candidate_list
     to: poll_candidate_list/poll_candidate_ids
     equal_fields: meeting_id
     restriction_mode: A
@@ -3680,6 +3783,7 @@ poll_candidate:
     constant: true
   user_id:
     type: relation
+    reference: user
     to: user/poll_candidate_ids
     restriction_mode: A
     constant: true
@@ -3689,6 +3793,7 @@ poll_candidate:
     restriction_mode: A
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/poll_candidate_ids
     required: true
     restriction_mode: A
@@ -3747,6 +3852,7 @@ mediafile:
     restriction_mode: A
   parent_id:
     type: relation
+    reference: mediafile
     to: mediafile/child_ids
     equal_fields: owner_id
     restriction_mode: A
@@ -3776,6 +3882,9 @@ mediafile:
     restriction_mode: A
   owner_id:
     type: generic-relation
+    reference:
+      - meeting(id)
+      - organization(id)
     to:
       - meeting/mediafile_ids
       - organization/mediafile_ids
@@ -3961,62 +4070,77 @@ projector:
     restriction_mode: A
   used_as_default_projector_for_agenda_item_list_in_meeting_id:
     type: relation
+    reference: meeting
     to: meeting/default_projector_agenda_item_list_ids
     restriction_mode: A
   used_as_default_projector_for_topic_in_meeting_id:
     type: relation
+    reference: meeting
     to: meeting/default_projector_topic_ids
     restriction_mode: A
   used_as_default_projector_for_list_of_speakers_in_meeting_id:
     type: relation
+    reference: meeting
     to: meeting/default_projector_list_of_speakers_ids
     restriction_mode: A
   used_as_default_projector_for_current_los_in_meeting_id:
     type: relation
+    reference: meeting
     to: meeting/default_projector_current_list_of_speakers_ids
     restriction_mode: A
   used_as_default_projector_for_motion_in_meeting_id:
     type: relation
+    reference: meeting
     to: meeting/default_projector_motion_ids
     restriction_mode: A
   used_as_default_projector_for_amendment_in_meeting_id:
     type: relation
+    reference: meeting
     to: meeting/default_projector_amendment_ids
     restriction_mode: A
   used_as_default_projector_for_motion_block_in_meeting_id:
     type: relation
+    reference: meeting
     to: meeting/default_projector_motion_block_ids
     restriction_mode: A
   used_as_default_projector_for_assignment_in_meeting_id:
     type: relation
+    reference: meeting
     to: meeting/default_projector_assignment_ids
     restriction_mode: A
   used_as_default_projector_for_mediafile_in_meeting_id:
     type: relation
+    reference: meeting
     to: meeting/default_projector_mediafile_ids
     restriction_mode: A
   used_as_default_projector_for_message_in_meeting_id:
     type: relation
+    reference: meeting
     to: meeting/default_projector_message_ids
     restriction_mode: A
   used_as_default_projector_for_countdown_in_meeting_id:
     type: relation
+    reference: meeting
     to: meeting/default_projector_countdown_ids
     restriction_mode: A
   used_as_default_projector_for_assignment_poll_in_meeting_id:
     type: relation
+    reference: meeting
     to: meeting/default_projector_assignment_poll_ids
     restriction_mode: A
   used_as_default_projector_for_motion_poll_in_meeting_id:
     type: relation
+    reference: meeting
     to: meeting/default_projector_motion_poll_ids
     restriction_mode: A
   used_as_default_projector_for_poll_in_meeting_id:
     type: relation
+    reference: meeting
     to: meeting/default_projector_poll_ids
     restriction_mode: A
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/projector_ids
     restriction_mode: A
     required: true
@@ -4053,21 +4177,36 @@ projection:
 
   current_projector_id:
     type: relation
+    reference: projector
     to: projector/current_projection_ids
     equal_fields: meeting_id
     restriction_mode: A
   preview_projector_id:
     type: relation
+    reference: projector
     to: projector/preview_projection_ids
     equal_fields: meeting_id
     restriction_mode: A
   history_projector_id:
     type: relation
+    reference: projector
     to: projector/history_projection_ids
     equal_fields: meeting_id
     restriction_mode: A
   content_object_id:
     type: generic-relation
+    reference:
+      - meeting
+      - motion
+      - mediafile
+      - list_of_speakers
+      - motion_block
+      - assignment
+      - agenda_item
+      - topic
+      - poll
+      - projector_message
+      - projector_countdown
     to:
       - meeting/projection_ids
       - motion/projection_ids
@@ -4086,6 +4225,7 @@ projection:
     constant: true
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/all_projection_ids
     required: true
     restriction_mode: A
@@ -4108,6 +4248,7 @@ projector_message:
     restriction_mode: A
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/projector_message_ids
     restriction_mode: A
     required: true
@@ -4154,6 +4295,7 @@ projector_countdown:
     restriction_mode: A
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/projector_countdown_ids
     restriction_mode: A
     required: true
@@ -4190,6 +4332,7 @@ chat_group:
     restriction_mode: A
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/chat_group_ids
     required: true
     restriction_mode: A
@@ -4210,18 +4353,21 @@ chat_message:
     restriction_mode: A
   meeting_user_id:
     type: relation
+    reference: meeting_user(id)
     to: meeting_user/chat_message_ids
     restriction_mode: A
     required: true
     constant: true
   chat_group_id:
     type: relation
+    reference: chat_group
     to: chat_group/chat_message_ids
     restriction_mode: A
     required: true
     constant: true
   meeting_id:
     type: relation
+    reference: meeting
     to: meeting/chat_message_ids
     required: true
     restriction_mode: A

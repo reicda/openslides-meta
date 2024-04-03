@@ -38,13 +38,11 @@ class TableFieldType:
         fname = ""
         tfield: dict[str, Any] = {}
         ref_column = ""
-        if to:
+        if reference:
+            tname, ref_column = InternalHelper.get_foreign_key_table_column(reference)
+        elif to:
             tname, fname, tfield = InternalHelper.get_field_definition_from_to(to)
             ref_column = "id"
-        if reference:
-            tname, ref_column = InternalHelper.get_foreign_key_table_column(
-                to, reference
-            )
         return TableFieldType(tname, fname, tfield, ref_column)
 
 
@@ -243,11 +241,9 @@ class InternalHelper:
         return tname, fname, field
 
     @staticmethod
-    def get_foreign_key_table_column(
-        to: str | None, reference: str | None
-    ) -> tuple[str, str]:
+    def get_foreign_key_table_column(reference: str | None) -> tuple[str, str]:
         """
-        Returns a tuple (table_name, field_name) gotten from "to" and/or "reference"-attribut
+        Returns a tuple (table_name, field_name) gotten from "reference"-attribut
         """
         if reference:
             result = InternalHelper.ref_compiled.search(reference)
@@ -260,10 +256,8 @@ class InternalHelper:
             else:
                 cols = "id"
             return re_groups[0], cols
-        elif to:
-            return to.split("/")[0], "id"
         else:
-            raise Exception("Relation field without reference or to")
+            raise Exception("Relation field without reference")
 
     @classmethod
     def get_models(cls, collection: str, field: str) -> dict[str, Any]:

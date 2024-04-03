@@ -2664,7 +2664,7 @@ motion:
     type: number[]
     # type: relation-list
     # to: motion/identical_motion_ids
-    description: with psycopg 3.2.0 we could use the as_string method without cursor and change dummy to number. Changed from relation-list to number[], because it still can't be generated. 
+    description: with psycopg 3.2.0 we could use the as_string method without cursor and change dummy to number. Changed from relation-list to number[], because it still can''t be generated.
     restriction_mode: C
   state_id:
     type: relation

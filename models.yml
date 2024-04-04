@@ -4,7 +4,7 @@
 #     - HTMLStrict: A string with HTML content.
 #     - HTMLPermissive: A string with HTML content (with video tags).
 #     - float: Numbers that are expected to be non-integer. Formatted as in rfc7159.
-#     - decimal(X): Decimal values represented as a string with X decimal places.
+#     - decimal(<X>): Decimal values represented as a string with X decimal places.
 #       At the moment we support only X == 6.
 #     - timestamp: Datetime as a unix timestamp. Why a number? This enables queries
 #       in the DB. And we do not need more precision than 1 second.
@@ -18,15 +18,12 @@
 #       in case of n:m-relations with an intermediary table.
 #     - Non-generic relations: The simple syntax for such a field
 #       `to: <collection>/<field>`. This is a reference to a collection-field, the "other" side of a relation.
-#           In the relational DB this will be a field in a view filled by an automatically generated sql.
-#           During the development of the relational db one relation can have a `to` and a `reference` property.
-#           In this case the `to` value is only used for historical reason, onky the `reference` property is used
-#           for the schema generation.
+#           In the relational DB this will be a field in a view filled by generated sql.
 #           If necessary the sql can be written manually, see `sql`.
-#       `reference: <collection(field1, ...)`. If only collection is given, `id` will be assumed. This will create a foreign key constraint. Therefore a `reference` is
+#       `reference: <collection>`. The field `id` will be assumed. This will create a foreign key constraint. Therefore a `reference` is
 #           the indicator for a real field in the table and you cannot use it for relation types with a `list` suffix.
 #           For some time there may be also a `to`-property for the relation, but for schema generation
-#           the `reference` takes the precedence over the `to`.
+#           the `reference` takes precedence over the `to`.
 #       `deferred: true`: this field get the "INITIALLY DEFERRED" on it's foreign key definition
 #     - Generic relations: The difference to non-generic relations is that you have a
 #       list of possible fields, so `to` can either hold multiple collections (if the
@@ -42,10 +39,41 @@
 #           - motion/option_ids
 #           - user/option_ids
 #           - poll_candidate_list/option_id
-#       The `reference`, only for generic-relation, but not generic-relation-list will be a list of references:
+#       For a generic-relation (not for generic-relation-list, see above), the attribute `reference` is a list of references:
 #         reference:
-#           - agenda_item(id)
-#           - assignment(id)
+#           - agenda_item
+#           - assignment
+#       List of allowed and implemented relations
+#           Symbols:
+#               1 = relation
+#               1G = generic-relation
+#               n = relation-list
+#               nG = generic-relation-list
+#               r = reference, will result in a FIELD
+#               to = to, collection with field get's an automatic sql in a view, if not together with `reference`
+#               R = required
+#             The first tuple symbols the relation from-to, the 2nd FIELD or SQL and primary or not, only valis for lists
+#             The original of the following list is used in source code as `decision_list`
+#           ("1Gr", ""): (FieldSqlErrorType.FIELD, False),
+#           ("1GrR", ""): (FieldSqlErrorType.FIELD, False),
+#           ("1r", ""): (FieldSqlErrorType.FIELD, False),
+#           ("1rR", ""): (FieldSqlErrorType.FIELD, False),
+#           ("1t", "1GrR"): (FieldSqlErrorType.SQL, False),
+#           ("1t", "1r"): (FieldSqlErrorType.SQL, False),
+#           ("1t", "1rR"): (FieldSqlErrorType.SQL, False),
+#           ("1tR", "1Gr"): (FieldSqlErrorType.SQL, False),
+#           ("1tR", "1GrR"): (FieldSqlErrorType.SQL, False),
+#           ("1rR", "1t"): (FieldSqlErrorType.FIELD, False),
+#           ("nGt", "nt"): (FieldSqlErrorType.SQL, True),
+#           ("nr", ""): (FieldSqlErrorType.SQL, True),
+#           ("nt", "1Gr"): (FieldSqlErrorType.SQL, False),
+#           ("nt", "1GrR"): (FieldSqlErrorType.SQL, False),
+#           ("nt", "1r"): (FieldSqlErrorType.SQL, False),
+#           ("nt", "1rR"): (FieldSqlErrorType.SQL, False),
+#           ("nt", "nGt"): (FieldSqlErrorType.SQL, False),
+#           ("nt", "nt"): (FieldSqlErrorType.SQL, "primary_decide_alphabetical"),
+#           ("ntR", "1r"): (FieldSqlErrorType.SQL, False),
+#
 #     - on_delete: This fields determines what should happen with the foreign model if
 #       this model gets deleted. Possible values are:
 #           - SET_NULL (default): delete the id from the foreign key
@@ -56,8 +84,8 @@
 #     - You can add JSON Schema properties to the fields like `enum`, `description`,
 #       `items`, `maxLength` and `minimum`
 # Additional properties:
-#     - The property `sql` can be filled manually with an sql-statement, which fills this field. This
-#       field can't be filled with an own vaue and is always defined in a view. You can use it on all
+#     - The optional property `sql` may contain an SQL statement which is used to calculate the value of this field. This
+#       field does not exist with its own value in a table, but is always defined in a view. It can be used on all
 #        field types, not only relations.
 #     - The property `read_only` describes a field that can not be changed by an action.
 #     - The property `default` describes the default value that is used for new objects.
@@ -187,18 +215,18 @@ organization:
     type: relation-list
     restriction_mode: B
     to: organization_tag/organization_id
-    reference: organization_tag(id)
+    reference: organization_tag
   theme_id:
     type: relation
     required: true
     restriction_mode: A
     to: theme/theme_for_organization_id
-    reference: theme(id)
+    reference: theme
   theme_ids:
     type: relation-list
     restriction_mode: A
     to: theme/organization_id
-    reference: theme(id)
+    reference: theme
   mediafile_ids:
     type: relation-list
     to: mediafile/owner_id
@@ -208,7 +236,7 @@ organization:
     type: relation-list
     restriction_mode: C
     to: user/organization_id
-    reference: user(id)
+    reference: user
   users_email_sender:
     type: string
     default: OpenSlides
@@ -425,7 +453,7 @@ meeting_user:
     constant: true
   meeting_id:
     type: relation
-    reference: meeting(id)
+    reference: meeting
     to: meeting/meeting_user_ids
     required: true
     restriction_mode: A
@@ -470,7 +498,7 @@ meeting_user:
     restriction_mode: A
   vote_delegated_to_id:
     type: relation
-    reference: meeting_user(id)
+    reference: meeting_user
     to: meeting_user/vote_delegations_from_ids
     equal_fields: meeting_id
     restriction_mode: A
@@ -710,7 +738,7 @@ committee:
   default_meeting_id:
     type: relation
     to: meeting/default_meeting_for_committee_id
-    reference: meeting(id)
+    reference: meeting
     restriction_mode: A
   user_ids:
     type: number[]
@@ -1714,82 +1742,82 @@ meeting:
   logo_projector_main_id:
     type: relation
     to: mediafile/used_as_logo_projector_main_in_meeting_id
-    reference: mediafile(id)
+    reference: mediafile
     restriction_mode: B
   logo_projector_header_id:
     type: relation
     to: mediafile/used_as_logo_projector_header_in_meeting_id
-    reference: mediafile(id)
+    reference: mediafile
     restriction_mode: B
   logo_web_header_id:
     type: relation
     to: mediafile/used_as_logo_web_header_in_meeting_id
-    reference: mediafile(id)
+    reference: mediafile
     restriction_mode: B
   logo_pdf_header_l_id:
     type: relation
     to: mediafile/used_as_logo_pdf_header_l_in_meeting_id
-    reference: mediafile(id)
+    reference: mediafile
     restriction_mode: B
   logo_pdf_header_r_id:
     type: relation
     to: mediafile/used_as_logo_pdf_header_r_in_meeting_id
-    reference: mediafile(id)
+    reference: mediafile
     restriction_mode: B
   logo_pdf_footer_l_id:
     type: relation
     to: mediafile/used_as_logo_pdf_header_l_in_meeting_id
-    reference: mediafile(id)
+    reference: mediafile
     restriction_mode: B
   logo_pdf_footer_r_id:
     type: relation
     to: mediafile/used_as_logo_pdf_header_l_in_meeting_id
-    reference: mediafile(id)
+    reference: mediafile
     restriction_mode: B
   logo_pdf_ballot_paper_id:
     type: relation
     to: mediafile/used_as_logo_pdf_ballot_paper_in_meeting_id
-    reference: mediafile(id)
+    reference: mediafile
     restriction_mode: B
   font_regular_id:
     type: relation
     to: mediafile/used_as_font_regular_in_meeting_id
-    reference: mediafile(id)
+    reference: mediafile
     restriction_mode: B
   font_italic_id:
     type: relation
     to: mediafile/used_as_font_italic_in_meeting_id
-    reference: mediafile(id)
+    reference: mediafile
     restriction_mode: B
   font_bold_id:
     type: relation
     to: mediafile/used_as_font_bold_in_meeting_id
-    reference: mediafile(id)
+    reference: mediafile
     restriction_mode: B
   font_bold_italic_id:
     type: relation
     to: mediafile/used_as_font_bold_italic_in_meeting_id
-    reference: mediafile(id)
+    reference: mediafile
     restriction_mode: B
   font_monospace_id:
     type: relation
     to: mediafile/used_as_font_monospace_in_meeting_id
-    reference: mediafile(id)
+    reference: mediafile
     restriction_mode: B
   font_chyron_speaker_name_id:
     type: relation
     to: mediafile/used_as_font_chyron_speaker_name_in_meeting_id
-    reference: mediafile(id)
+    reference: mediafile
     restriction_mode: B
   font_projector_h1_id:
     type: relation
     to: mediafile/used_as_font_projector_h1_in_meeting_id
-    reference: mediafile(id)
+    reference: mediafile
     restriction_mode: B
   font_projector_h2_id:
     type: relation
     to: mediafile/used_as_font_projector_h2_in_meeting_id
-    reference: mediafile(id)
+    reference: mediafile
     restriction_mode: B
   # Other relations
   committee_id:
@@ -1825,12 +1853,12 @@ meeting:
   list_of_speakers_countdown_id:
     type: relation
     to: projector_countdown/used_as_list_of_speakers_countdown_meeting_id
-    reference: projector_countdown(id)
+    reference: projector_countdown
     restriction_mode: B
   poll_countdown_id:
     type: relation
     to: projector_countdown/used_as_poll_countdown_meeting_id
-    reference: projector_countdown(id)
+    reference: projector_countdown
     restriction_mode: B
   projection_ids:
     type: relation-list
@@ -1909,14 +1937,14 @@ meeting:
     required: true
   default_group_id:
     type: relation
-    reference: group(id)
+    reference: group
     to: group/default_group_for_meeting_id
     required: true
     restriction_mode: B
   admin_group_id:
     type: relation
     to: group/admin_group_for_meeting_id
-    reference: group(id)
+    reference: group
     restriction_mode: B
 
 structure_level:
@@ -3538,7 +3566,7 @@ poll:
   global_option_id:
     type: relation
     to: option/used_as_global_option_in_poll_id
-    reference: option(id)
+    reference: option
     on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
@@ -3657,7 +3685,7 @@ vote:
     constant: true
   user_id:
     type: relation
-    reference: user(id)
+    reference: user
     to: user/vote_ids
     restriction_mode: A
   delegated_user_id:
@@ -3782,7 +3810,7 @@ assignment_candidate:
     constant: true
   meeting_user_id:
     type: relation
-    reference: meeting_user(id)
+    reference: meeting_user
     to: meeting_user/assignment_candidate_ids
     restriction_mode: A
     constant: true
@@ -3936,8 +3964,8 @@ mediafile:
   owner_id:
     type: generic-relation
     reference:
-      - meeting(id)
-      - organization(id)
+      - meeting
+      - organization
     to:
       - meeting/mediafile_ids
       - organization/mediafile_ids
@@ -4406,7 +4434,7 @@ chat_message:
     restriction_mode: A
   meeting_user_id:
     type: relation
-    reference: meeting_user(id)
+    reference: meeting_user
     to: meeting_user/chat_message_ids
     restriction_mode: A
     required: true

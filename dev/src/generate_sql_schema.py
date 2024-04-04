@@ -9,7 +9,8 @@ from string import Formatter
 from textwrap import dedent
 from typing import Any, TypedDict, cast
 
-from helper_get_names import HelperGetNames, InternalHelper, TableFieldType
+from helper_get_names import (KEYSEPARATOR, HelperGetNames, InternalHelper,
+                              TableFieldType)
 
 SOURCE = (Path(__file__).parent / ".." / ".." / "models.yml").resolve()
 DESTINATION = (Path(__file__).parent / ".." / "sql" / "schema_relational.sql").resolve()
@@ -43,7 +44,7 @@ class SQL_Delete_Update_Options(str, Enum):
     NO_ACTION = "NO ACTION"
 
 
-class FIELD_SQL_ERROR_ENUM(Enum):
+class FieldSqlErrorType(Enum):
     FIELD = 1
     SQL = 2
     ERROR = 3
@@ -262,7 +263,7 @@ class GenerateCodeBlocks:
             own_table_field, [foreign_table_field]
         )
 
-        if state == FIELD_SQL_ERROR_ENUM.FIELD:
+        if state == FieldSqlErrorType.FIELD:
             text.update(cls.get_schema_simple_types(table_name, fname, fdata, "number"))
             initially_deferred = fdata.get(
                 "deferred"
@@ -278,7 +279,7 @@ class GenerateCodeBlocks:
                     initially_deferred,
                 )
             )
-        elif state == FIELD_SQL_ERROR_ENUM.SQL:
+        elif state == FieldSqlErrorType.SQL:
             if sql := fdata.get("sql", ""):
                 text["view"] = sql + ",\n"
             elif foreign_table_field.field_def["type"] == "generic-relation":
@@ -331,7 +332,7 @@ class GenerateCodeBlocks:
             own_table_field, [foreign_table_field]
         )
 
-        if state != FIELD_SQL_ERROR_ENUM.ERROR:
+        if state != FieldSqlErrorType.ERROR:
             if primary:
                 if foreign_table_field.field_def.get("type") == "relation-list":
                     nm_table_name, value = Helper.get_nm_table_for_n_m_relation_lists(
@@ -466,7 +467,7 @@ class GenerateCodeBlocks:
             own_table_field, foreign_table_fields
         )
 
-        if state == FIELD_SQL_ERROR_ENUM.FIELD:
+        if state == FieldSqlErrorType.FIELD:
             text.update(
                 cls.get_schema_simple_types(table_name, fname, fdata, fdata["type"])
             )
@@ -515,7 +516,7 @@ class GenerateCodeBlocks:
             own_table_field, foreign_table_fields
         )
 
-        if state == FIELD_SQL_ERROR_ENUM.SQL and primary:
+        if state == FieldSqlErrorType.SQL and primary:
             # create gm-intermediate table
             gm_foreign_table, value = Helper.get_gm_table_for_gm_nm_relation_lists(
                 own_table_field, foreign_table_fields
@@ -971,7 +972,7 @@ class Helper:
     @staticmethod
     def check_relation_definitions(
         own_field: TableFieldType, foreign_fields: list[TableFieldType]
-    ) -> tuple[FIELD_SQL_ERROR_ENUM, bool, str, str]:
+    ) -> tuple[FieldSqlErrorType, bool, str, str]:
         """
         Decides for the own-field,
           - whether it is a field, a sql-expression or is there an error
@@ -982,7 +983,7 @@ class Helper:
         case of an error an error text
 
         Returns:
-        - field, sql, error => enum FIELD_SQL_ERROR_ENUM
+        - field, sql, error => enum FieldSqlErrorType
         - primary field (only relevant for list fields)
         - complete relational text with FIELD, SQL or *** in front
         - error line if error else empty string
@@ -999,7 +1000,7 @@ class Helper:
             foreign_collectionfields.append(foreign_field.collectionfield)
 
         if error:
-            state = FIELD_SQL_ERROR_ENUM.ERROR
+            state = FieldSqlErrorType.ERROR
             primary = False
         else:
             for i, foreign_field in enumerate(foreign_fields):
@@ -1014,50 +1015,50 @@ class Helper:
                     if not error and (statex != state or primaryx != primary):
                         error = f"Error in generation for generic collectionfield '{own_field.collectionfield}'"
                 if error:
-                    state = FIELD_SQL_ERROR_ENUM.ERROR
+                    state = FieldSqlErrorType.ERROR
                     break
 
-        state_text = "***" if state == FIELD_SQL_ERROR_ENUM.ERROR else state.name
+        state_text = "***" if state == FieldSqlErrorType.ERROR else state.name
         text = f"{state_text} {own_c}:{','.join(foreigns_c)} => {own_field.collectionfield}:-> {','.join(foreign_collectionfields)}\n"
-        if state == FIELD_SQL_ERROR_ENUM.ERROR:
+        if state == FieldSqlErrorType.ERROR:
             text += f"    {error}"
         return state, primary, text, error
 
     @staticmethod
     def generate_field_or_sql_decision(
         own: TableFieldType, own_c: str, foreign: TableFieldType, foreign_c: str
-    ) -> tuple[FIELD_SQL_ERROR_ENUM, bool, str]:
+    ) -> tuple[FieldSqlErrorType, bool, str]:
         """
         Returns:
-        - field, sql, error for own => enum FIELD_SQL_ERROR_ENUM
+        - field, sql, error for own => enum FieldSqlErrorType
         - primary field for own: (only relevant for list fields)
         - error line if error else empty string
         """
         decision_list: dict[
-            tuple[str, str], tuple[FIELD_SQL_ERROR_ENUM | None, bool | str | None]
+            tuple[str, str], tuple[FieldSqlErrorType | None, bool | str | None]
         ] = {
-            ("1Gr", ""): (FIELD_SQL_ERROR_ENUM.FIELD, False),
-            ("1GrR", ""): (FIELD_SQL_ERROR_ENUM.FIELD, False),
-            ("1r", ""): (FIELD_SQL_ERROR_ENUM.FIELD, False),
-            ("1rR", ""): (FIELD_SQL_ERROR_ENUM.FIELD, False),
-            ("1t", "1GrR"): (FIELD_SQL_ERROR_ENUM.SQL, False),
-            ("1t", "1r"): (FIELD_SQL_ERROR_ENUM.SQL, False),
-            ("1t", "1rR"): (FIELD_SQL_ERROR_ENUM.SQL, False),
-            ("1tR", "1Gr"): (FIELD_SQL_ERROR_ENUM.SQL, False),
-            ("1tR", "1GrR"): (FIELD_SQL_ERROR_ENUM.SQL, False),
-            ("1rR", "1t"): (FIELD_SQL_ERROR_ENUM.FIELD, False),
-            ("nGt", "nt"): (FIELD_SQL_ERROR_ENUM.SQL, True),
-            ("nr", ""): (FIELD_SQL_ERROR_ENUM.SQL, True),
-            ("nt", "1Gr"): (FIELD_SQL_ERROR_ENUM.SQL, False),
-            ("nt", "1GrR"): (FIELD_SQL_ERROR_ENUM.SQL, False),
-            ("nt", "1r"): (FIELD_SQL_ERROR_ENUM.SQL, False),
-            ("nt", "1rR"): (FIELD_SQL_ERROR_ENUM.SQL, False),
-            ("nt", "nGt"): (FIELD_SQL_ERROR_ENUM.SQL, False),
-            ("nt", "nt"): (FIELD_SQL_ERROR_ENUM.SQL, "primary_decide_alphabetical"),
-            ("ntR", "1r"): (FIELD_SQL_ERROR_ENUM.SQL, False),
+            ("1Gr", ""): (FieldSqlErrorType.FIELD, False),
+            ("1GrR", ""): (FieldSqlErrorType.FIELD, False),
+            ("1r", ""): (FieldSqlErrorType.FIELD, False),
+            ("1rR", ""): (FieldSqlErrorType.FIELD, False),
+            ("1t", "1GrR"): (FieldSqlErrorType.SQL, False),
+            ("1t", "1r"): (FieldSqlErrorType.SQL, False),
+            ("1t", "1rR"): (FieldSqlErrorType.SQL, False),
+            ("1tR", "1Gr"): (FieldSqlErrorType.SQL, False),
+            ("1tR", "1GrR"): (FieldSqlErrorType.SQL, False),
+            ("1rR", "1t"): (FieldSqlErrorType.FIELD, False),
+            ("nGt", "nt"): (FieldSqlErrorType.SQL, True),
+            ("nr", ""): (FieldSqlErrorType.SQL, True),
+            ("nt", "1Gr"): (FieldSqlErrorType.SQL, False),
+            ("nt", "1GrR"): (FieldSqlErrorType.SQL, False),
+            ("nt", "1r"): (FieldSqlErrorType.SQL, False),
+            ("nt", "1rR"): (FieldSqlErrorType.SQL, False),
+            ("nt", "nGt"): (FieldSqlErrorType.SQL, False),
+            ("nt", "nt"): (FieldSqlErrorType.SQL, "primary_decide_alphabetical"),
+            ("ntR", "1r"): (FieldSqlErrorType.SQL, False),
         }
 
-        state: FIELD_SQL_ERROR_ENUM | str | None
+        state: FieldSqlErrorType | str | None
         primary: bool | str | None
         error = ""
 
@@ -1066,16 +1067,16 @@ class Helper:
         )
         if state is None:
             error = f"Type combination not implemented: {own_c}:{foreign_c} on field {own.collectionfield}\n"
-            state = FIELD_SQL_ERROR_ENUM.ERROR
+            state = FieldSqlErrorType.ERROR
         elif primary == "primary_decide_alphabetical":
             if own.collectionfield == foreign.collectionfield:
                 error = f"Field {own.collectionfield} identical with foreign.collectionfield. SQL_decice_alphabetical uncedidable!\n"
-                state = FIELD_SQL_ERROR_ENUM.ERROR
+                state = FieldSqlErrorType.ERROR
             primary = (
                 foreign.collectionfield == "-"
                 or own.collectionfield < foreign.collectionfield
             )
-        return cast(FIELD_SQL_ERROR_ENUM, state), cast(bool, primary), error
+        return cast(FieldSqlErrorType, state), cast(bool, primary), error
 
     @staticmethod
     def get_generic_combined_fields(
@@ -1122,7 +1123,7 @@ class ModelsHelper:
             re_groups = result.groups()
             return re_groups[0]
         elif to:
-            return to.split("/")[0]
+            return to.split(KEYSEPARATOR)[0]
         else:
             raise Exception("Relation field without reference or to")
 

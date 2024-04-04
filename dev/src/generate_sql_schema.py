@@ -9,8 +9,12 @@ from string import Formatter
 from textwrap import dedent
 from typing import Any, TypedDict, cast
 
-from helper_get_names import (KEYSEPARATOR, HelperGetNames, InternalHelper,
-                              TableFieldType)
+from helper_get_names import (
+    KEYSEPARATOR,
+    HelperGetNames,
+    InternalHelper,
+    TableFieldType,
+)
 
 SOURCE = (Path(__file__).parent / ".." / ".." / "models.yml").resolve()
 DESTINATION = (Path(__file__).parent / ".." / "sql" / "schema_relational.sql").resolve()

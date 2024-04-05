@@ -37,6 +37,15 @@ class Relations(BaseTestCase):
             meeting_row = DbUtils.select_id_wrapper(curs, "meeting", self.meeting1_id, ["default_meeting_for_committee_id"])
             assert meeting_row["default_meeting_for_committee_id"] == self.committee1_id
 
+    # TODO: remove test, fiktiv test with 1r:1tR, test s.o, in der die meeting-Seite ein SQL hat
+    # jetzt setze ich mal ein erequired auf der Meeting Seite. Was ist übrigens mit 1r:1rR
+    def test_one_to_one_pre_populated_1r_1tR(self) -> None:
+        with self.db_connection.cursor() as curs:
+            committee_row = DbUtils.select_id_wrapper(curs, "committee", self.committee1_id, ["default_meeting_id"])
+            assert committee_row["default_meeting_id"] == self.meeting1_id
+            meeting_row = DbUtils.select_id_wrapper(curs, "meeting", self.meeting1_id, ["default_meeting_for_committee_id"])
+            assert meeting_row["default_meeting_for_committee_id"] == self.committee1_id
+
     def test_one_to_one_1tR_1t(self) -> None:
         with self.db_connection.cursor() as curs:
             # Prepopulated

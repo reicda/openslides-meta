@@ -64,8 +64,8 @@ class HelperGetNames:
     @staticmethod
     @max_length
     def get_table_name(table_name: str) -> str:
-        """get's the table name as ol dcollection name with appendis 'T'"""
-        return table_name + "T"
+        """get's the table name as old collection name with appendix '_t'"""
+        return table_name + "_t"
 
     @staticmethod
     @max_length

@@ -1353,6 +1353,15 @@ meeting:
   users_enable_vote_delegations:
     type: boolean
     restriction_mode: B
+  participants_forbid_delegator_in_list_of_speakers:
+    type: boolean
+    restriction_mode: B
+  participants_forbid_delegator_as_submitter:
+    type: boolean
+    restriction_mode: B
+  participants_forbid_delegator_as_supporter:
+    type: boolean
+    restriction_mode: B
 
   # Assignments
   assignments_export_title:

@@ -55,7 +55,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- MODELS_YML_CHECKSUM = '439bb5c7ec340920a013cfb408687436'
+-- MODELS_YML_CHECKSUM = 'a5825cc3e8727870c460309635849354'
 -- Type definitions
 DO $$
 BEGIN
@@ -482,7 +482,7 @@ comment on column organization_t.limit_of_users is 'Maximum of active users for 
 /*
  Fields without SQL definition for table organization
 
-    vote_decrypt_public_main_key type:string is marked as a calculated field
+    organization/vote_decrypt_public_main_key: type:string is marked as a calculated field and not generated in schema
 
 */
 
@@ -506,7 +506,6 @@ CREATE TABLE IF NOT EXISTS user_t (
     is_demo_user boolean,
     last_login timestamptz,
     organization_management_level enum_user_organization_management_level,
-    committee_ids integer[],
     meeting_ids integer[],
     organization_id integer GENERATED ALWAYS AS (1) STORED NOT NULL
 );
@@ -515,7 +514,6 @@ CREATE TABLE IF NOT EXISTS user_t (
 
 comment on column user_t.saml_id is 'unique-key from IdP for SAML login';
 comment on column user_t.organization_management_level is 'Hierarchical permission level for the whole organization.';
-comment on column user_t.committee_ids is 'Calculated field: Returns committee_ids, where the user is manager or member in a meeting';
 comment on column user_t.meeting_ids is 'Calculated. All ids from meetings calculated via meeting_user and group_ids as integers.';
 
 
@@ -604,7 +602,6 @@ CREATE TABLE IF NOT EXISTS committee_t (
     description text,
     external_id varchar(256),
     default_meeting_id integer,
-    user_ids integer[],
     forwarding_user_id integer,
     organization_id integer GENERATED ALWAYS AS (1) STORED NOT NULL
 );
@@ -612,7 +609,6 @@ CREATE TABLE IF NOT EXISTS committee_t (
 
 
 comment on column committee_t.external_id is 'unique';
-comment on column committee_t.user_ids is 'Calculated field: All users which are in a group of a meeting, belonging to the committee or beeing manager of the committee';
 
 
 CREATE TABLE IF NOT EXISTS meeting_t (
@@ -1212,7 +1208,7 @@ comment on column poll_t.votes_signature is 'base64 signature of votes_raw field
 /*
  Fields without SQL definition for table poll
 
-    vote_count type:number is marked as a calculated field
+    poll/vote_count: type:number is marked as a calculated field and not generated in schema
 
 */
 
@@ -1395,7 +1391,7 @@ CREATE TABLE IF NOT EXISTS projection_t (
 /*
  Fields without SQL definition for table projection
 
-    content type:JSON is marked as a calculated field
+    projection/content: type:JSON is marked as a calculated field and not generated in schema
 
 */
 
@@ -1485,10 +1481,16 @@ CREATE TABLE IF NOT EXISTS gm_organization_tag_tagged_ids_t (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     organization_tag_id integer NOT NULL REFERENCES organization_tag_t(id),
     tagged_id varchar(100) NOT NULL,
-    tagged_id_committee_id integer GENERATED ALWAYS AS (CASE WHEN split_part(tagged_id, '/', 1) = 'committee' THEN cast(split_part(tagged_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES committeeT(id),
-    tagged_id_meeting_id integer GENERATED ALWAYS AS (CASE WHEN split_part(tagged_id, '/', 1) = 'meeting' THEN cast(split_part(tagged_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES meetingT(id),
+    tagged_id_committee_id integer GENERATED ALWAYS AS (CASE WHEN split_part(tagged_id, '/', 1) = 'committee' THEN cast(split_part(tagged_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES committee_t(id),
+    tagged_id_meeting_id integer GENERATED ALWAYS AS (CASE WHEN split_part(tagged_id, '/', 1) = 'meeting' THEN cast(split_part(tagged_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES meeting_t(id),
     CONSTRAINT valid_tagged_id_part1 CHECK (split_part(tagged_id, '/', 1) IN ('committee', 'meeting')),
     CONSTRAINT unique_$organization_tag_id_$tagged_id UNIQUE (organization_tag_id, tagged_id)
+);
+
+CREATE TABLE IF NOT EXISTS nm_committee_user_ids_user_t (
+    committee_id integer NOT NULL REFERENCES committee_t (id),
+    user_id integer NOT NULL REFERENCES user_t (id),
+    PRIMARY KEY (committee_id, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS nm_committee_manager_ids_user_t (
@@ -1549,9 +1551,9 @@ CREATE TABLE IF NOT EXISTS gm_tag_tagged_ids_t (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     tag_id integer NOT NULL REFERENCES tag_t(id),
     tagged_id varchar(100) NOT NULL,
-    tagged_id_agenda_item_id integer GENERATED ALWAYS AS (CASE WHEN split_part(tagged_id, '/', 1) = 'agenda_item' THEN cast(split_part(tagged_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES agenda_itemT(id),
-    tagged_id_assignment_id integer GENERATED ALWAYS AS (CASE WHEN split_part(tagged_id, '/', 1) = 'assignment' THEN cast(split_part(tagged_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES assignmentT(id),
-    tagged_id_motion_id integer GENERATED ALWAYS AS (CASE WHEN split_part(tagged_id, '/', 1) = 'motion' THEN cast(split_part(tagged_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES motionT(id),
+    tagged_id_agenda_item_id integer GENERATED ALWAYS AS (CASE WHEN split_part(tagged_id, '/', 1) = 'agenda_item' THEN cast(split_part(tagged_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES agenda_item_t(id),
+    tagged_id_assignment_id integer GENERATED ALWAYS AS (CASE WHEN split_part(tagged_id, '/', 1) = 'assignment' THEN cast(split_part(tagged_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES assignment_t(id),
+    tagged_id_motion_id integer GENERATED ALWAYS AS (CASE WHEN split_part(tagged_id, '/', 1) = 'motion' THEN cast(split_part(tagged_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES motion_t(id),
     CONSTRAINT valid_tagged_id_part1 CHECK (split_part(tagged_id, '/', 1) IN ('agenda_item', 'assignment', 'motion')),
     CONSTRAINT unique_$tag_id_$tagged_id UNIQUE (tag_id, tagged_id)
 );
@@ -1566,7 +1568,7 @@ CREATE TABLE IF NOT EXISTS gm_motion_state_extension_reference_ids_t (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     motion_id integer NOT NULL REFERENCES motion_t(id),
     state_extension_reference_id varchar(100) NOT NULL,
-    state_extension_reference_id_motion_id integer GENERATED ALWAYS AS (CASE WHEN split_part(state_extension_reference_id, '/', 1) = 'motion' THEN cast(split_part(state_extension_reference_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES motionT(id),
+    state_extension_reference_id_motion_id integer GENERATED ALWAYS AS (CASE WHEN split_part(state_extension_reference_id, '/', 1) = 'motion' THEN cast(split_part(state_extension_reference_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES motion_t(id),
     CONSTRAINT valid_state_extension_reference_id_part1 CHECK (split_part(state_extension_reference_id, '/', 1) IN ('motion')),
     CONSTRAINT unique_$motion_id_$state_extension_reference_id UNIQUE (motion_id, state_extension_reference_id)
 );
@@ -1575,7 +1577,7 @@ CREATE TABLE IF NOT EXISTS gm_motion_recommendation_extension_reference_ids_t (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     motion_id integer NOT NULL REFERENCES motion_t(id),
     recommendation_extension_reference_id varchar(100) NOT NULL,
-    recommendation_extension_reference_id_motion_id integer GENERATED ALWAYS AS (CASE WHEN split_part(recommendation_extension_reference_id, '/', 1) = 'motion' THEN cast(split_part(recommendation_extension_reference_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES motionT(id),
+    recommendation_extension_reference_id_motion_id integer GENERATED ALWAYS AS (CASE WHEN split_part(recommendation_extension_reference_id, '/', 1) = 'motion' THEN cast(split_part(recommendation_extension_reference_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES motion_t(id),
     CONSTRAINT valid_recommendation_extension_reference_id_part1 CHECK (split_part(recommendation_extension_reference_id, '/', 1) IN ('motion')),
     CONSTRAINT unique_$motion_id_$recommendation_extension_reference_id UNIQUE (motion_id, recommendation_extension_reference_id)
 );
@@ -1596,9 +1598,9 @@ CREATE TABLE IF NOT EXISTS gm_mediafile_attachment_ids_t (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     mediafile_id integer NOT NULL REFERENCES mediafile_t(id),
     attachment_id varchar(100) NOT NULL,
-    attachment_id_motion_id integer GENERATED ALWAYS AS (CASE WHEN split_part(attachment_id, '/', 1) = 'motion' THEN cast(split_part(attachment_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES motionT(id),
-    attachment_id_topic_id integer GENERATED ALWAYS AS (CASE WHEN split_part(attachment_id, '/', 1) = 'topic' THEN cast(split_part(attachment_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES topicT(id),
-    attachment_id_assignment_id integer GENERATED ALWAYS AS (CASE WHEN split_part(attachment_id, '/', 1) = 'assignment' THEN cast(split_part(attachment_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES assignmentT(id),
+    attachment_id_motion_id integer GENERATED ALWAYS AS (CASE WHEN split_part(attachment_id, '/', 1) = 'motion' THEN cast(split_part(attachment_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES motion_t(id),
+    attachment_id_topic_id integer GENERATED ALWAYS AS (CASE WHEN split_part(attachment_id, '/', 1) = 'topic' THEN cast(split_part(attachment_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES topic_t(id),
+    attachment_id_assignment_id integer GENERATED ALWAYS AS (CASE WHEN split_part(attachment_id, '/', 1) = 'assignment' THEN cast(split_part(attachment_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES assignment_t(id),
     CONSTRAINT valid_attachment_id_part1 CHECK (split_part(attachment_id, '/', 1) IN ('motion', 'topic', 'assignment')),
     CONSTRAINT unique_$mediafile_id_$attachment_id UNIQUE (mediafile_id, attachment_id)
 );
@@ -1617,7 +1619,7 @@ CREATE TABLE IF NOT EXISTS nm_chat_group_write_group_ids_group_t (
 -- View definitions
 
 CREATE OR REPLACE VIEW organization AS SELECT *,
-(select array_agg(c.id) from committeeT c) as committee_ids,
+(select array_agg(c.id) from committee_t c) as committee_ids,
 (select array_agg(m.id) from meeting_t m where m.is_active_in_organization_id = o.id) as active_meeting_ids,
 (select array_agg(m.id) from meeting_t m where m.is_archived_in_organization_id = o.id) as archived_meeting_ids,
 (select array_agg(m.id) from meeting_t m where m.template_for_organization_id = o.id) as template_meeting_ids,
@@ -1630,6 +1632,7 @@ FROM organization_t o;
 
 CREATE OR REPLACE VIEW user_ AS SELECT *,
 (select array_agg(n.meeting_id) from nm_meeting_present_user_ids_user_t n where n.user_id = u.id) as is_present_in_meeting_ids,
+(select array_agg(n.committee_id) from nm_committee_user_ids_user_t n where n.user_id = u.id) as committee_ids,
 (select array_agg(n.committee_id) from nm_committee_manager_ids_user_t n where n.user_id = u.id) as committee_management_ids,
 (select array_agg(c.id) from committee_t c where c.forwarding_user_id = u.id) as forwarding_committee_ids,
 (select array_agg(m.id) from meeting_user_t m where m.user_id = u.id) as meeting_user_ids,
@@ -1640,6 +1643,7 @@ CREATE OR REPLACE VIEW user_ AS SELECT *,
 (select array_agg(p.id) from poll_candidate_t p where p.user_id = u.id) as poll_candidate_ids
 FROM user_t u;
 
+comment on column user_.committee_ids is 'Calculated field: Returns committee_ids, where the user is manager or member in a meeting';
 
 CREATE OR REPLACE VIEW meeting_user AS SELECT *,
 (select array_agg(p.id) from personal_note_t p where p.meeting_user_id = m.id) as personal_note_ids,
@@ -1668,12 +1672,14 @@ FROM theme_t t;
 
 CREATE OR REPLACE VIEW committee AS SELECT *,
 (select array_agg(m.id) from meeting_t m where m.committee_id = c.id) as meeting_ids,
+(select array_agg(n.user_id) from nm_committee_user_ids_user_t n where n.committee_id = c.id) as user_ids,
 (select array_agg(n.user_id) from nm_committee_manager_ids_user_t n where n.committee_id = c.id) as manager_ids,
 (select array_agg(n.forward_to_committee_id) from nm_committee_forward_to_committee_ids_committee_t n where n.receive_forwardings_from_committee_id = c.id) as forward_to_committee_ids,
 (select array_agg(n.receive_forwardings_from_committee_id) from nm_committee_forward_to_committee_ids_committee_t n where n.forward_to_committee_id = c.id) as receive_forwardings_from_committee_ids,
 (select array_agg(g.organization_tag_id) from gm_organization_tag_tagged_ids_t g where g.tagged_id_committee_id = c.id) as organization_tag_ids
 FROM committee_t c;
 
+comment on column committee.user_ids is 'Calculated field: All users which are in a group of a meeting, belonging to the committee or beeing manager of the committee';
 
 CREATE OR REPLACE VIEW meeting AS SELECT *,
 (select array_agg(g.id) from group_t g where g.used_as_motion_poll_default_id = m.id) as motion_poll_default_group_ids,
@@ -1758,6 +1764,7 @@ CREATE OR REPLACE VIEW group_ AS SELECT *,
 (select array_agg(n.poll_id) from nm_group_poll_ids_poll_t n where n.group_id = g.id) as poll_ids
 FROM group_t g;
 
+comment on column group_.mediafile_inherited_access_group_ids is 'Calculated field.';
 
 CREATE OR REPLACE VIEW tag AS SELECT *,
 (select array_agg(g.id) from gm_tag_tagged_ids_t g where g.tag_id = t.id) as tagged_ids
@@ -1924,6 +1931,7 @@ CREATE OR REPLACE VIEW mediafile AS SELECT *,
 (select m1.id from meeting_t m1 where m1.font_projector_h2_id = m.id) as used_as_font_projector_h2_in_meeting_id
 FROM mediafile_t m;
 
+comment on column mediafile.inherited_access_group_ids is 'Calculated field.';
 
 CREATE OR REPLACE VIEW projector AS SELECT *,
 (select array_agg(p1.id) from projection_t p1 where p1.current_projector_id = p.id) as current_projection_ids,
@@ -2287,7 +2295,7 @@ Model.Field -> Model.Field
 */
 
 /*
-SQL nrs: => organization/committee_ids:-> committee/
+SQL nr: => organization/committee_ids:-> committee/
 SQL nt:1r => organization/active_meeting_ids:-> meeting/is_active_in_organization_id
 SQL nt:1r => organization/archived_meeting_ids:-> meeting/is_archived_in_organization_id
 SQL nt:1r => organization/template_meeting_ids:-> meeting/template_for_organization_id
@@ -2298,6 +2306,7 @@ SQL nt:1GrR => organization/mediafile_ids:-> mediafile/owner_id
 SQL nr: => organization/user_ids:-> user/
 
 SQL nt:nt => user/is_present_in_meeting_ids:-> meeting/present_user_ids
+SQL nt:nt => user/committee_ids:-> committee/user_ids
 SQL nt:nt => user/committee_management_ids:-> committee/manager_ids
 SQL nt:1r => user/forwarding_committee_ids:-> committee/forwarding_user_id
 SQL nt:1rR => user/meeting_user_ids:-> meeting_user/user_id
@@ -2328,6 +2337,7 @@ SQL 1t:1rR => theme/theme_for_organization_id:-> organization/theme_id
 
 SQL nt:1rR => committee/meeting_ids:-> meeting/committee_id
 FIELD 1r: => committee/default_meeting_id:-> meeting/
+SQL nt:nt => committee/user_ids:-> user/committee_ids
 SQL nt:nt => committee/manager_ids:-> user/committee_management_ids
 SQL nt:nt => committee/forward_to_committee_ids:-> committee/receive_forwardings_from_committee_ids
 SQL nt:nt => committee/receive_forwardings_from_committee_ids:-> committee/forward_to_committee_ids
@@ -2682,5 +2692,11 @@ FIELD 1rR: => chat_message/chat_group_id:-> chat_group/
 FIELD 1rR: => chat_message/meeting_id:-> meeting/
 
 */
+/*
+There are 3 errors/warnings
+    organization/vote_decrypt_public_main_key: type:string is marked as a calculated field and not generated in schema
+    poll/vote_count: type:number is marked as a calculated field and not generated in schema
+    projection/content: type:JSON is marked as a calculated field and not generated in schema
+*/
 
-/*   Missing attribute handling for constant, sql, on_delete, equal_fields, unique, deferred */
+/*   Missing attribute handling for constant, on_delete, sqlTODO, sql, equal_fields, unique, deferred */

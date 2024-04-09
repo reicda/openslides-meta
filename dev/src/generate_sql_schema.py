@@ -26,11 +26,13 @@ class SchemaZoneTexts(TypedDict, total=False):
 
     table: str
     view: str
+    post_view: str
     alter_table: str
     alter_table_final: str
     create_trigger: str
     undecided: str
     final_info: str
+    errors: list[str]
 
 
 class ToDict(TypedDict):
@@ -76,7 +78,9 @@ class GenerateCodeBlocks:
     )  # Key=Name, data: collected content of table
 
     @classmethod
-    def generate_the_code(cls) -> tuple[str, str, str, str, str, list[str], str, str]:
+    def generate_the_code(
+        cls,
+    ) -> tuple[str, str, str, str, str, list[str], str, str, list[str]]:
         """
         Return values:
           pre_code: Type definitions etc., which should all appear before first table definitions
@@ -89,6 +93,7 @@ class GenerateCodeBlocks:
               n:m-relations name schema: f"nm_{smaller-table-name}_{it's-fieldname}_{greater-table_name}" uses one per relation
               g:m-relations name schema: f"gm_{table_field.table}_{table_field.column}" of table with generic-list-field
           create_trigger_code Definitions of triggers
+          errors: to show
         """
         handled_attributes = {
             "required",
@@ -118,11 +123,12 @@ class GenerateCodeBlocks:
         final_info_code: str = ""
         missing_handled_attributes = []
         im_table_code = ""
+        errors: list[str] = []
 
         for table_name, fields in MODELS.items():
             if table_name in ["_migration_index", "_meta"]:
                 continue
-            schema_zone_texts: SchemaZoneTexts = defaultdict(str)  # type: ignore
+            schema_zone_texts = cast(SchemaZoneTexts, defaultdict(str))
             cls.intermediate_tables = {}
 
             for fname, fdata in fields.items():
@@ -134,7 +140,9 @@ class GenerateCodeBlocks:
                         missing_handled_attributes.append(attr)
                 method_or_str, type_ = cls.get_method(fname, fdata)
                 if isinstance(method_or_str, str):
-                    schema_zone_texts["undecided"] += method_or_str
+                    error = Helper.prefix_error(method_or_str, table_name, fname)
+                    schema_zone_texts["undecided"] += error
+                    errors.append(error)
                 else:
                     if (enum_ := fdata.get("enum")) or (
                         enum_ := fdata.get("items", {}).get("enum")
@@ -142,9 +150,11 @@ class GenerateCodeBlocks:
                         pre_code += Helper.get_enum_type_definition(
                             table_name, fname, enum_
                         )
-                    result = method_or_str(table_name, fname, fdata, type_)
+                    result, error = method_or_str(table_name, fname, fdata, type_)
                     for k, v in result.items():
                         schema_zone_texts[k] += v or ""  # type: ignore
+                    if error:
+                        errors.append(Helper.prefix_error(error, table_name, fname))
 
             if code := schema_zone_texts["table"]:
                 table_name_code += Helper.get_table_head(table_name)
@@ -156,6 +166,8 @@ class GenerateCodeBlocks:
             if code := schema_zone_texts["view"]:
                 view_name_code += Helper.get_view_head(table_name)
                 view_name_code += Helper.get_view_body_end(table_name, code)
+            if code := schema_zone_texts["post_view"]:
+                view_name_code += code
             if code := schema_zone_texts["alter_table_final"]:
                 alter_table_final_code += code + "\n"
             if code := schema_zone_texts["create_trigger"]:
@@ -174,15 +186,21 @@ class GenerateCodeBlocks:
             missing_handled_attributes,
             im_table_code,
             create_trigger_code,
+            errors,
         )
 
     @classmethod
     def get_method(
         cls, fname: str, fdata: dict[str, Any]
-    ) -> tuple[str | Callable[..., SchemaZoneTexts], str]:
+    ) -> tuple[str | Callable[..., tuple[SchemaZoneTexts, str]], str]:
+        """
+        returns
+        - string or a callable with return value of type SchemaZoneTexts
+        - type as string
+        """
         if fdata.get("calculated"):
             return (
-                f"    {fname} type:{fdata.get('type')} is marked as a calculated field\n",
+                f"type:{fdata.get('type')} is marked as a calculated field and not generated in schema\n",
                 "",
             )
         if fname == "id":
@@ -200,14 +218,15 @@ class GenerateCodeBlocks:
                 text = "no method defined"
         else:
             text = "Unknown Type"
-        return (f"    {fname} type:{fdata.get('type')} {text}\n", type_)
+        return (f"type:{type_} {text}\n", type_)
 
     @classmethod
     def get_schema_simple_types(
         cls, table_name: str, fname: str, fdata: dict[str, Any], type_: str
-    ) -> SchemaZoneTexts:
-        text: SchemaZoneTexts
-        subst, text = Helper.get_initials(table_name, fname, type_, fdata)
+    ) -> tuple[SchemaZoneTexts, str]:
+        text = cast(SchemaZoneTexts, defaultdict(str))
+        subst, szt = Helper.get_initials(table_name, fname, type_, fdata)
+        text.update(szt)
         if isinstance((tmp := subst["type"]), string.Template):
             if maxLength := fdata.get("maxLength"):
                 tmp = tmp.substitute({"maxLength": maxLength})
@@ -217,58 +236,63 @@ class GenerateCodeBlocks:
                 tmp = tmp.substitute({"maxLength": 256})
             subst["type"] = tmp
         text["table"] = Helper.FIELD_TEMPLATE.substitute(subst)
-        return text
+        return text, ""
 
     @classmethod
     def get_schema_color(
         cls, table_name: str, fname: str, fdata: dict[str, Any], type_: str
-    ) -> SchemaZoneTexts:
-        text: SchemaZoneTexts
-        subst, text = Helper.get_initials(table_name, fname, type_, fdata)
+    ) -> tuple[SchemaZoneTexts, str]:
+        text = cast(SchemaZoneTexts, defaultdict(str))
+        subst, tmp = Helper.get_initials(table_name, fname, type_, fdata)
+        text.update(tmp)
         tmpl = FIELD_TYPES[type_]["pg_type"]
         subst["type"] = tmpl.substitute(subst)
         if default := fdata.get("default"):
             subst["default"] = f" DEFAULT {int(default[1:], 16)}"
         text["table"] = Helper.FIELD_TEMPLATE.substitute(subst)
-        return text
+        return text, ""
 
     @classmethod
     def get_schema_primary_key(
         cls, table_name: str, fname: str, fdata: dict[str, Any], type_: str
-    ) -> SchemaZoneTexts:
-        text: SchemaZoneTexts
-        subst, text = Helper.get_initials(table_name, fname, type_, fdata)
+    ) -> tuple[SchemaZoneTexts, str]:
+        text = cast(SchemaZoneTexts, defaultdict(str))
+        subst, tmp = Helper.get_initials(table_name, fname, type_, fdata)
+        text.update(tmp)
         subst["primary_key"] = " PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY"
         text["table"] = Helper.FIELD_TEMPLATE.substitute(subst)
-        return text
+        return text, ""
 
     @classmethod
     def get_schema_organization_id(
         cls, table_name: str, fname: str, fdata: dict[str, Any], type_: str
-    ) -> SchemaZoneTexts:
-        text: SchemaZoneTexts
-        subst, text = Helper.get_initials(table_name, fname, type_, fdata)
+    ) -> tuple[SchemaZoneTexts, str]:
+        text = cast(SchemaZoneTexts, defaultdict(str))
+        subst, tmp = Helper.get_initials(table_name, fname, type_, fdata)
+        text.update(tmp)
         subst["primary_key"] = " GENERATED ALWAYS AS (1) STORED"
         text["table"] = Helper.FIELD_TEMPLATE.substitute(subst)
-        return text
+        return text, ""
 
     @classmethod
     def get_relation_type(
         cls, table_name: str, fname: str, fdata: dict[str, Any], type_: str
-    ) -> SchemaZoneTexts:
-        text: SchemaZoneTexts = {}
+    ) -> tuple[SchemaZoneTexts, str]:
+        text = cast(SchemaZoneTexts, defaultdict(str))
         own_table_field = TableFieldType(table_name, fname, fdata)
         foreign_table_field: TableFieldType = (
             TableFieldType.get_definitions_from_foreign(
                 fdata.get("to"), fdata.get("reference")
             )
         )
-        state, primary, final_info, error = Helper.check_relation_definitions(
+        state, _, final_info, error = Helper.check_relation_definitions(
             own_table_field, [foreign_table_field]
         )
 
         if state == FieldSqlErrorType.FIELD:
-            text.update(cls.get_schema_simple_types(table_name, fname, fdata, "number"))
+            text, error = cls.get_schema_simple_types(
+                table_name, fname, fdata, "number"
+            )
             initially_deferred = fdata.get(
                 "deferred"
             ) or ModelsHelper.is_fk_initially_deferred(
@@ -303,7 +327,7 @@ class GenerateCodeBlocks:
                     cast(str, foreign_table_field.column),
                 )
         text["final_info"] = final_info
-        return text
+        return text, error
 
     @classmethod
     def get_sql_for_relation_1_1(
@@ -323,8 +347,8 @@ class GenerateCodeBlocks:
     @classmethod
     def get_relation_list_type(
         cls, table_name: str, fname: str, fdata: dict[str, Any], type_: str
-    ) -> SchemaZoneTexts:
-        text: SchemaZoneTexts = {}
+    ) -> tuple[SchemaZoneTexts, str]:
+        text = cast(SchemaZoneTexts, defaultdict(str))
         own_table_field = TableFieldType(table_name, fname, fdata)
         foreign_table_field: TableFieldType = (
             TableFieldType.get_definitions_from_foreign(
@@ -407,6 +431,10 @@ class GenerateCodeBlocks:
                     foreign_table_column,
                     foreign_table_ref_column,
                 )
+                if comment := fdata.get("description"):
+                    text["post_view"] = Helper.get_post_view_comment(
+                        HelperGetNames.get_view_name(table_name), fname, comment
+                    )
                 if own_table_field.field_def.get("required"):
                     text["create_trigger"] = (
                         cls.get_trigger_check_not_null_for_relation_lists(
@@ -417,7 +445,7 @@ class GenerateCodeBlocks:
                         )
                     )
         text["final_info"] = final_info
-        return text
+        return text, error
 
     @classmethod
     def get_sql_for_relation_n_1(
@@ -458,7 +486,7 @@ class GenerateCodeBlocks:
     @classmethod
     def get_generic_relation_type(
         cls, table_name: str, fname: str, fdata: dict[str, Any], type_: str
-    ) -> SchemaZoneTexts:
+    ) -> tuple[SchemaZoneTexts, str]:
         text = cast(SchemaZoneTexts, defaultdict(str))
         own_table_field = TableFieldType(table_name, fname, fdata)
         foreign_table_fields: list[TableFieldType] = (
@@ -467,13 +495,13 @@ class GenerateCodeBlocks:
             )
         )
 
-        state, primary, final_info, error = Helper.check_relation_definitions(
+        state, _, final_info, error = Helper.check_relation_definitions(
             own_table_field, foreign_table_fields
         )
 
         if state == FieldSqlErrorType.FIELD:
-            text.update(
-                cls.get_schema_simple_types(table_name, fname, fdata, fdata["type"])
+            text, error = cls.get_schema_simple_types(
+                table_name, fname, fdata, fdata["type"]
             )
             initially_deferred = any(
                 ModelsHelper.is_fk_initially_deferred(
@@ -503,13 +531,13 @@ class GenerateCodeBlocks:
                 own_table_field.column, foreign_tables
             )
         text["final_info"] = final_info
-        return text
+        return text, error
 
     @classmethod
     def get_generic_relation_list_type(
         cls, table_name: str, fname: str, fdata: dict[str, Any], type_: str
-    ) -> SchemaZoneTexts:
-        text: SchemaZoneTexts = {}
+    ) -> tuple[SchemaZoneTexts, str]:
+        text = cast(SchemaZoneTexts, defaultdict(str))
         own_table_field = TableFieldType(table_name, fname, fdata)
         foreign_table_fields: list[TableFieldType] = (
             ModelsHelper.get_definitions_from_foreign_list(
@@ -522,13 +550,16 @@ class GenerateCodeBlocks:
 
         if state == FieldSqlErrorType.SQL and primary:
             # create gm-intermediate table
-            gm_foreign_table, value = Helper.get_gm_table_for_gm_nm_relation_lists(
-                own_table_field, foreign_table_fields
-            )
-            if gm_foreign_table not in cls.intermediate_tables:
-                cls.intermediate_tables[gm_foreign_table] = value
-            else:
-                raise Exception(f"Tried to create gm_table '{gm_foreign_table}' twice")
+            if primary:
+                gm_foreign_table, value = Helper.get_gm_table_for_gm_nm_relation_lists(
+                    own_table_field, foreign_table_fields
+                )
+                if gm_foreign_table not in cls.intermediate_tables:
+                    cls.intermediate_tables[gm_foreign_table] = value
+                else:
+                    raise Exception(
+                        f"Tried to create gm_table '{gm_foreign_table}' twice"
+                    )
 
             # add field to view definition of table_name
             text["view"] = cls.get_sql_for_relation_n_1(
@@ -539,24 +570,13 @@ class GenerateCodeBlocks:
                 f"{own_table_field.table}_{own_table_field.ref_column}",
                 own_table_field.ref_column,
             )
+            if comment := fdata.get("description"):
+                text["post_view"] += Helper.get_post_view_comment(
+                    HelperGetNames.get_view_name(table_name), fname, comment
+                )
 
-            # # add foreign key constraints for nm-relation-tables
-            # initially_deferred = any(
-            #     ModelsHelper.is_fk_initially_deferred(
-            #         table_name, foreign_table_field.table
-            #     )
-            #     for foreign_table_field in foreign_table_fields
-            # )
-            # for foreign_table_field in foreign_table_fields:
-            #     text["alter_table_final"] = Helper.get_foreign_key_table_constraint_as_alter_table(
-            #         table_name,
-            #         foreign_table_field.table,
-            #         fname[:-1],
-            #         foreign_table_field.ref_column,
-            #         initially_deferred,
-            #     )
         text["final_info"] = final_info
-        return text
+        return text, error
 
 
 class Helper:
@@ -663,7 +683,7 @@ class Helper:
         )
     )
     GM_FOREIGN_TABLE_LINE_TEMPLATE = string.Template(
-        "    ${gm_content_field} integer GENERATED ALWAYS AS (CASE WHEN split_part(${own_table_column}, '/', 1) = '${foreign_table_name}' THEN cast(split_part(${own_table_column}, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES ${foreign_table_name}T(id),"
+        "    ${gm_content_field} integer GENERATED ALWAYS AS (CASE WHEN split_part(${own_table_column}, '/', 1) = '${foreign_view_name}' THEN cast(split_part(${own_table_column}, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES ${foreign_table_name}(id),"
     )
 
     RELATION_LIST_AGENDA = dedent(
@@ -840,7 +860,8 @@ class Helper:
             foreign_table_name = foreign_table_field.table
             subst_dict = {
                 "own_table_column": own_table_column,
-                "foreign_table_name": foreign_table_name,
+                "foreign_table_name": HelperGetNames.get_table_name(foreign_table_name),
+                "foreign_view_name": foreign_table_name,
                 "gm_content_field": HelperGetNames.get_gm_content_field(
                     own_table_column, foreign_table_name
                 ),
@@ -874,7 +895,7 @@ class Helper:
     def get_initials(
         table_name: str, fname: str, type_: str, fdata: dict[str, Any]
     ) -> tuple[SubstDict, SchemaZoneTexts]:
-        text: SchemaZoneTexts = {}
+        text = cast(SchemaZoneTexts, defaultdict(str))
         flist: list[str] = [
             cast(str, form[1])
             for form in Formatter().parse(Helper.FIELD_TEMPLATE.template)
@@ -914,10 +935,14 @@ class Helper:
                 f" CONSTRAINT {minlength_constraint_name} CHECK (char_length({fname}) >= {minLength})"
             )
         if comment := fdata.get("description"):
-            text["alter_table"] = (
-                f"comment on column {HelperGetNames.get_table_name(table_name)}.{fname} is '{comment}';\n"
+            text["alter_table"] = Helper.get_post_view_comment(
+                HelperGetNames.get_table_name(table_name), fname, comment
             )
         return subst, text
+
+    @staticmethod
+    def get_post_view_comment(entity_name: str, fname: str, comment: str) -> str:
+        return f"comment on column {entity_name}.{fname} is '{comment}';\n"
 
     @staticmethod
     def get_cardinality(field_all: TableFieldType) -> tuple[str, str]:
@@ -925,7 +950,6 @@ class Helper:
         Returns
         - string with cardinality string (1, 1G, n or nG= Cardinality, G=Generatic-relation, r=reference, t=to, s=sql, R=required)
         - string with error message or empty string if no error
-
         """
         error = ""
         field = field_all.field_def
@@ -1060,15 +1084,14 @@ class Helper:
             ("nt", "nGt"): (FieldSqlErrorType.SQL, False),
             ("nt", "nt"): (FieldSqlErrorType.SQL, "primary_decide_alphabetical"),
             ("ntR", "1r"): (FieldSqlErrorType.SQL, False),
+            ("nts", "nts"): (FieldSqlErrorType.SQL, False),
         }
 
         state: FieldSqlErrorType | str | None
         primary: bool | str | None
         error = ""
 
-        state, primary = decision_list.get(
-            (own_c.rstrip("s"), foreign_c.rstrip("s")), (None, None)
-        )
+        state, primary = decision_list.get((own_c, foreign_c), (None, None))
         if state is None:
             error = f"Type combination not implemented: {own_c}:{foreign_c} on field {own.collectionfield}\n"
             state = FieldSqlErrorType.ERROR
@@ -1092,6 +1115,10 @@ class Helper:
     def get_generic_field_constraint(own_column: str, foreign_tables: list[str]) -> str:
         constraint_name = HelperGetNames.get_generic_valid_constraint_name(own_column)
         return f"""    CONSTRAINT {constraint_name} CHECK (split_part({own_column}, '/', 1) IN ('{"','".join(foreign_tables)}')),\n"""
+
+    @staticmethod
+    def prefix_error(method_or_str: str, table_name: str, fname: str) -> str:
+        return f"    {table_name}/{fname}: {method_or_str}"
 
 
 class ModelsHelper:
@@ -1264,6 +1291,7 @@ def main() -> None:
         missing_handled_attributes,
         im_table_code,
         create_trigger_code,
+        errors,
     ) = GenerateCodeBlocks.generate_the_code()
     with open(DESTINATION, "w") as dest:
         dest.write(Helper.FILE_TEMPLATE)
@@ -1284,10 +1312,18 @@ def main() -> None:
         dest.write("/*\n")
         dest.write(final_info_code)
         dest.write("*/\n")
+        if errors:
+            dest.write(f"/*\nThere are {len(errors)} errors/warnings\n")
+            dest.write("".join(errors))
+            dest.write("*/\n")
         dest.write(
             f"\n/*   Missing attribute handling for {', '.join(missing_handled_attributes)} */"
         )
-    print(f"Models file {DESTINATION} successfully created.")
+    if errors:
+        print(f"Models file {DESTINATION} created with {len(errors)} errors/warnings\n")
+        print("".join(errors))
+    else:
+        print(f"Models file {DESTINATION} successfully created.")
 
 
 if __name__ == "__main__":

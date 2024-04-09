@@ -84,13 +84,13 @@ class BaseTestCase(TestCase):
         """ do something like setting initial_data.json"""
         with cls.db_connection.transaction():
             with cls.db_connection.cursor() as curs:
-                cls.theme1_id = DbUtils.insert_wrapper(curs, "themeT", {
+                cls.theme1_id = DbUtils.insert_wrapper(curs, "theme_t", {
                     "name": "OpenSlides Blue",
                     "accent_500": int("0x2196f3", 16),
                     "primary_500": int("0x317796", 16),
                     "warn_500": int("0xf06400", 16),
                 })
-                cls.organization_id = DbUtils.insert_wrapper(curs, "organizationT", {
+                cls.organization_id = DbUtils.insert_wrapper(curs, "organization_t", {
                     "name": "Test Organization",
                     "legal_notice": "<a href=\"http://www.openslides.org\">OpenSlides</a> is a free web based presentation and assembly system for visualizing and controlling agenda, motions and elections of an assembly.",
                     "login_text": "Good Morning!",
@@ -120,7 +120,7 @@ class BaseTestCase(TestCase):
                         "is_physical_person": "is_person"
                     })
                 })
-                cls.user1_id = DbUtils.insert_wrapper(curs, "userT", {
+                cls.user1_id = DbUtils.insert_wrapper(curs, "user_t", {
                     "username": "admin",
                     "last_name": "Administrator",
                     "is_active": True,
@@ -132,7 +132,7 @@ class BaseTestCase(TestCase):
                     "default_vote_weight": "1.000000",
                     "organization_management_level": "superadmin",
                 })
-                cls.committee1_id = DbUtils.insert_wrapper(curs, "committeeT", {
+                cls.committee1_id = DbUtils.insert_wrapper(curs, "committee_t", {
                     "name": "Default committee",
                     "description": "Add description here",
                 })
@@ -143,7 +143,7 @@ class BaseTestCase(TestCase):
                 cls.groupM1_staff_id = result_ids["staff_group_id"]
                 cls.simple_workflowM1_id = result_ids["simple_workflow_id"]
                 cls.complex_workflowM1_id = result_ids["complex_workflow_id"]
-                curs.execute("UPDATE committeeT SET default_meeting_id = %s where id = %s;", (result_ids["meeting_id"], cls.committee1_id))
+                curs.execute("UPDATE committee_t SET default_meeting_id = %s where id = %s;", (result_ids["meeting_id"], cls.committee1_id))
 
     @classmethod
     def create_meeting(cls, curs: psycopg.Cursor, committee_id: int, meeting_id: int = 0, ) -> None:
@@ -161,14 +161,14 @@ class BaseTestCase(TestCase):
         """
         result = {}
         if meeting_id:
-            sequence_name = curs.execute("select * from pg_get_serial_sequence('meetingT', 'id');").fetchone()["pg_get_serial_sequence"]
+            sequence_name = curs.execute("select * from pg_get_serial_sequence('meeting_t', 'id');").fetchone()["pg_get_serial_sequence"]
             last_value = curs.execute(f"select last_value from {sequence_name};").fetchone()["last_value"]
             if last_value >= meeting_id:
                 raise ValueError(f"meeting_id {meeting_id} is not available, last_value in sequence {sequence_name} is {last_value}")
-            result["meeting_id"] = curs.execute("select setval(pg_get_serial_sequence('meetingT', 'id'), %s);", (meeting_id,)).fetchone()["setval"]
+            result["meeting_id"] = curs.execute("select setval(pg_get_serial_sequence('meeting_t', 'id'), %s);", (meeting_id,)).fetchone()["setval"]
         else:
-            result["meeting_id"] = curs.execute("select nextval(pg_get_serial_sequence('meetingT', 'id')) as id_;").fetchone()["id_"]
-        (result["default_group_id"], result["admin_group_id"], result["staff_group_id"]) = DbUtils.insert_many_wrapper(curs, "groupT", [
+            result["meeting_id"] = curs.execute("select nextval(pg_get_serial_sequence('meeting_t', 'id')) as id_;").fetchone()["id_"]
+        (result["default_group_id"], result["admin_group_id"], result["staff_group_id"]) = DbUtils.insert_many_wrapper(curs, "group_t", [
             {
                 "name": "Default",
                 "permissions": [
@@ -211,7 +211,7 @@ class BaseTestCase(TestCase):
                 "meeting_id": result["meeting_id"]
             }
         ])
-        (result["default_projector_id"], result["secondary_projector_id"]) = DbUtils.insert_many_wrapper(curs, "projectorT", [
+        (result["default_projector_id"], result["secondary_projector_id"]) = DbUtils.insert_many_wrapper(curs, "projector_t", [
             {
                 "name": "Default projector",
                 "is_internal": False,
@@ -271,9 +271,9 @@ class BaseTestCase(TestCase):
                 "meeting_id": result["meeting_id"]
             }
         ])
-        result["simple_workflow_id"] = curs.execute("select nextval(pg_get_serial_sequence('motion_workflowT', 'id')) as new_id;").fetchone()["new_id"]
-        result["complex_workflow_id"] = curs.execute("select nextval(pg_get_serial_sequence('motion_workflowT', 'id')) as new_id;").fetchone()["new_id"]
-        wf_m1_simple_motion_state_ids = DbUtils.insert_many_wrapper(curs, "motion_stateT", [
+        result["simple_workflow_id"] = curs.execute("select nextval(pg_get_serial_sequence('motion_workflow_t', 'id')) as new_id;").fetchone()["new_id"]
+        result["complex_workflow_id"] = curs.execute("select nextval(pg_get_serial_sequence('motion_workflow_t', 'id')) as new_id;").fetchone()["new_id"]
+        wf_m1_simple_motion_state_ids = DbUtils.insert_many_wrapper(curs, "motion_state_t", [
             {
                 "name": "submitted",
                 "weight": 1,
@@ -347,7 +347,7 @@ class BaseTestCase(TestCase):
             },
         ])
         wf_m1_simple_first_state_id = wf_m1_simple_motion_state_ids[0]
-        wf_m1_complex_motion_state_ids = DbUtils.insert_many_wrapper(curs, "motion_stateT", [
+        wf_m1_complex_motion_state_ids = DbUtils.insert_many_wrapper(curs, "motion_state_t", [
             {
                 "name": "in progress",
                 "weight": 5,
@@ -545,7 +545,7 @@ class BaseTestCase(TestCase):
         ])
         wf_m1_complex_first_state_id = wf_m1_complex_motion_state_ids[0]
 
-        DbUtils.insert_many_wrapper(curs, "nm_motion_state_next_state_ids_motion_stateT",
+        DbUtils.insert_many_wrapper(curs, "nm_motion_state_next_state_ids_motion_state_t",
             [
                 {"next_state_id": wf_m1_simple_motion_state_ids[1], "previous_state_id": wf_m1_simple_motion_state_ids[0]},
                 {"next_state_id": wf_m1_simple_motion_state_ids[2], "previous_state_id": wf_m1_simple_motion_state_ids[0]},
@@ -563,7 +563,7 @@ class BaseTestCase(TestCase):
                 {"next_state_id": wf_m1_complex_motion_state_ids[8], "previous_state_id": wf_m1_complex_motion_state_ids[2]},
                 {"next_state_id": wf_m1_complex_motion_state_ids[9], "previous_state_id": wf_m1_complex_motion_state_ids[2]},
             ], returning='')
-        assert [result["simple_workflow_id"], result["complex_workflow_id"]] == DbUtils.insert_many_wrapper(curs, "motion_workflowT",
+        assert [result["simple_workflow_id"], result["complex_workflow_id"]] == DbUtils.insert_many_wrapper(curs, "motion_workflow_t",
             [
                 {
                     "id": result["simple_workflow_id"],
@@ -581,7 +581,7 @@ class BaseTestCase(TestCase):
                 }
             ]
         )
-        assert result["meeting_id"] == DbUtils.insert_wrapper(curs, "meetingT", {
+        assert result["meeting_id"] == DbUtils.insert_wrapper(curs, "meeting_t", {
                     "id": result["meeting_id"],
                     "name": "OpenSlides Demo",
                     "is_active_in_organization_id": cls.organization_id,

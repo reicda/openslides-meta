@@ -52,8 +52,8 @@ run-psql:
 # Docker manage commands
 
 run-dev:
-	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker-compose up -d --build
-	docker-compose exec models bash --rcfile /etc/bash_completion
+	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose up -d --build
+	docker compose exec models bash --rcfile /etc/bash_completion
 
 stop-dev:
-	docker-compose down
+	docker compose down

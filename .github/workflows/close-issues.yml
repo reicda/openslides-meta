@@ -38,8 +38,8 @@ jobs:
               }
             }
           variables: |
-            owner: ${{ github.event.repository.owner.name }}
-            repo: ${{ github.event.repository.name }}
+            owner: ${{ github.repository_owner }}
+            name: ${{ github.event.repository.name }}
             number: ${{ github.event.pull_request.number }}
 
       - name: Close issues

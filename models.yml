@@ -43,6 +43,9 @@
 #         reference:
 #           - agenda_item
 #           - assignment
+#       The `sql`-attribute can only be used for relation-types in combination with a `to`-attribute. The `required` attribute
+#       is not allowed, because in hand written sql we can't check for.
+#       Currently implemented only for n:m-relations without generating an intermediate table.
 #       List of allowed and implemented relations
 #           Symbols:
 #               1 = relation
@@ -73,6 +76,7 @@
 #           ("nt", "nGt"): (FieldSqlErrorType.SQL, False),
 #           ("nt", "nt"): (FieldSqlErrorType.SQL, "primary_decide_alphabetical"),
 #           ("ntR", "1r"): (FieldSqlErrorType.SQL, False),
+#           ("nts", "nts"): (FieldSqlErrorType.SQL, False),
 #
 #     - on_delete: This fields determines what should happen with the foreign model if
 #       this model gets deleted. Possible values are:
@@ -84,9 +88,6 @@
 #     - You can add JSON Schema properties to the fields like `enum`, `description`,
 #       `items`, `maxLength` and `minimum`
 # Additional properties:
-#     - The optional property `sql` may contain an SQL statement which is used to calculate the value of this field. This
-#       field does not exist with its own value in a table, but is always defined in a view. It can be used on all
-#        field types, not only relations.
 #     - The property `read_only` describes a field that can not be changed by an action.
 #     - The property `default` describes the default value that is used for new objects.
 #     - The property `required` describes that this field can not be null or an empty
@@ -197,7 +198,6 @@ organization:
     type: relation-list
     to: committee/organization_id
     restriction_mode: B
-    sql: (select array_agg(c.id) from committeeT c) as committee_ids
     reference: committee
   active_meeting_ids:
     type: relation-list
@@ -357,20 +357,20 @@ user:
   # - is member (= has group-rights) of a meeting in the committee
   # TODO: fix sql, not correct for the current design and naming
   committee_ids:
-    type: number[]
+    type: relation-list
     to: committee/user_ids
     restriction_mode: E
     read_only: true
     description: "Calculated field: Returns committee_ids, where the user is manager or member in a meeting"
-    sql: >-
-      select array_agg(committee_id) from (
+    sqlTODO: >-
+      (select array_agg(committee_id) from
           select m.committee_id as committee_id from group_to_user gtu
             join groupT g on g.id = gtu.group_id
             join meetingT m on m.id = g.meeting_id
             where gtu.user_id = u.id
           union
           select ctu.committee_id as committee_id from committee_manager_to_user ctu where ctu.user_id = u.id
-        ) as cs
+        ) as committee_ids
 
   # committee specific permissions
   committee_management_ids:
@@ -414,6 +414,7 @@ user:
     type: number[]
     description: Calculated. All ids from meetings calculated via meeting_user and group_ids as integers.
     read_only: true
+    sql: todo
     restriction_mode: E
   organization_id:
     type: relation
@@ -741,20 +742,20 @@ committee:
     reference: meeting
     restriction_mode: A
   user_ids:
-    type: number[]
+    type: relation-list
     to: user/committee_ids
     restriction_mode: A
     read_only: true
     description: "Calculated field: All users which are in a group of a meeting, belonging to the committee or beeing manager of the committee"
-    sql: >-
-      select array_agg(user_id) from (
+    sqlTODO: >-
+      (select array_agg(user_id) from
         select gtu.user_id as user_id from meetingT m
           join groupT g on g.meeting_id = m.id
           join group_to_user gtu on gtu.group_id = g.id
           where m.committee_id = c.id
         union
         select ctu.user_id as user_id from committee_manager_to_user ctu where ctu.committee_id = c.id
-      ) as x
+      ) as user_ids
   manager_ids:
     type: relation-list
     to: user/committee_management_ids

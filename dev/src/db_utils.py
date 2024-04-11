@@ -5,6 +5,10 @@ from psycopg import Cursor, sql
 
 class DbUtils:
     @classmethod
+    def get_pg_array_for_cu(cls, data: list) -> str:
+        return f"""{{"{'","'.join(item for item in data)}"}}"""
+
+    @classmethod
     def insert_wrapper(
         cls, curs: Cursor, table_name: str, data: dict[str, Any]
     ) -> None | int:

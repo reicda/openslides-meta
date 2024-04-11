@@ -55,386 +55,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- MODELS_YML_CHECKSUM = 'a5825cc3e8727870c460309635849354'
+-- MODELS_YML_CHECKSUM = 'ac6ee8717b6cd0896409f80bfab30549'
 -- Type definitions
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_organization_default_language') THEN
-        CREATE TYPE enum_organization_default_language AS ENUM ('en', 'de', 'it', 'es', 'ru', 'cs', 'fr');
-    ELSE
-        RAISE NOTICE 'type "enum_organization_default_language" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_user_organization_management_level') THEN
-        CREATE TYPE enum_user_organization_management_level AS ENUM ('superadmin', 'can_manage_organization', 'can_manage_users');
-    ELSE
-        RAISE NOTICE 'type "enum_user_organization_management_level" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_language') THEN
-        CREATE TYPE enum_meeting_language AS ENUM ('en', 'de', 'it', 'es', 'ru', 'cs', 'fr');
-    ELSE
-        RAISE NOTICE 'type "enum_meeting_language" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_applause_type') THEN
-        CREATE TYPE enum_meeting_applause_type AS ENUM ('applause-type-bar', 'applause-type-particles');
-    ELSE
-        RAISE NOTICE 'type "enum_meeting_applause_type" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_export_csv_encoding') THEN
-        CREATE TYPE enum_meeting_export_csv_encoding AS ENUM ('utf-8', 'iso-8859-15');
-    ELSE
-        RAISE NOTICE 'type "enum_meeting_export_csv_encoding" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_export_pdf_pagenumber_alignment') THEN
-        CREATE TYPE enum_meeting_export_pdf_pagenumber_alignment AS ENUM ('left', 'right', 'center');
-    ELSE
-        RAISE NOTICE 'type "enum_meeting_export_pdf_pagenumber_alignment" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_export_pdf_fontsize') THEN
-        CREATE TYPE enum_meeting_export_pdf_fontsize AS ENUM ('10', '11', '12');
-    ELSE
-        RAISE NOTICE 'type "enum_meeting_export_pdf_fontsize" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_export_pdf_pagesize') THEN
-        CREATE TYPE enum_meeting_export_pdf_pagesize AS ENUM ('A4', 'A5');
-    ELSE
-        RAISE NOTICE 'type "enum_meeting_export_pdf_pagesize" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_agenda_numeral_system') THEN
-        CREATE TYPE enum_meeting_agenda_numeral_system AS ENUM ('arabic', 'roman');
-    ELSE
-        RAISE NOTICE 'type "enum_meeting_agenda_numeral_system" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_agenda_item_creation') THEN
-        CREATE TYPE enum_meeting_agenda_item_creation AS ENUM ('always', 'never', 'default_yes', 'default_no');
-    ELSE
-        RAISE NOTICE 'type "enum_meeting_agenda_item_creation" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_agenda_new_items_default_visibility') THEN
-        CREATE TYPE enum_meeting_agenda_new_items_default_visibility AS ENUM ('common', 'internal', 'hidden');
-    ELSE
-        RAISE NOTICE 'type "enum_meeting_agenda_new_items_default_visibility" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_motions_default_line_numbering') THEN
-        CREATE TYPE enum_meeting_motions_default_line_numbering AS ENUM ('outside', 'inline', 'none');
-    ELSE
-        RAISE NOTICE 'type "enum_meeting_motions_default_line_numbering" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_motions_recommendation_text_mode') THEN
-        CREATE TYPE enum_meeting_motions_recommendation_text_mode AS ENUM ('original', 'changed', 'diff', 'agreed');
-    ELSE
-        RAISE NOTICE 'type "enum_meeting_motions_recommendation_text_mode" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_motions_default_sorting') THEN
-        CREATE TYPE enum_meeting_motions_default_sorting AS ENUM ('number', 'weight');
-    ELSE
-        RAISE NOTICE 'type "enum_meeting_motions_default_sorting" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_motions_number_type') THEN
-        CREATE TYPE enum_meeting_motions_number_type AS ENUM ('per_category', 'serially_numbered', 'manually');
-    ELSE
-        RAISE NOTICE 'type "enum_meeting_motions_number_type" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_motions_amendments_text_mode') THEN
-        CREATE TYPE enum_meeting_motions_amendments_text_mode AS ENUM ('freestyle', 'fulltext', 'paragraph');
-    ELSE
-        RAISE NOTICE 'type "enum_meeting_motions_amendments_text_mode" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_motion_poll_ballot_paper_selection') THEN
-        CREATE TYPE enum_meeting_motion_poll_ballot_paper_selection AS ENUM ('NUMBER_OF_DELEGATES', 'NUMBER_OF_ALL_PARTICIPANTS', 'CUSTOM_NUMBER');
-    ELSE
-        RAISE NOTICE 'type "enum_meeting_motion_poll_ballot_paper_selection" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_motion_poll_default_onehundred_percent_base') THEN
-        CREATE TYPE enum_meeting_motion_poll_default_onehundred_percent_base AS ENUM ('Y', 'YN', 'YNA', 'N', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled');
-    ELSE
-        RAISE NOTICE 'type "enum_meeting_motion_poll_default_onehundred_percent_base" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_motion_poll_default_backend') THEN
-        CREATE TYPE enum_meeting_motion_poll_default_backend AS ENUM ('long', 'fast');
-    ELSE
-        RAISE NOTICE 'type "enum_meeting_motion_poll_default_backend" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_users_pdf_wlan_encryption') THEN
-        CREATE TYPE enum_meeting_users_pdf_wlan_encryption AS ENUM ('', 'WEP', 'WPA', 'nopass');
-    ELSE
-        RAISE NOTICE 'type "enum_meeting_users_pdf_wlan_encryption" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_assignment_poll_ballot_paper_selection') THEN
-        CREATE TYPE enum_meeting_assignment_poll_ballot_paper_selection AS ENUM ('NUMBER_OF_DELEGATES', 'NUMBER_OF_ALL_PARTICIPANTS', 'CUSTOM_NUMBER');
-    ELSE
-        RAISE NOTICE 'type "enum_meeting_assignment_poll_ballot_paper_selection" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_assignment_poll_default_onehundred_percent_base') THEN
-        CREATE TYPE enum_meeting_assignment_poll_default_onehundred_percent_base AS ENUM ('Y', 'YN', 'YNA', 'N', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled');
-    ELSE
-        RAISE NOTICE 'type "enum_meeting_assignment_poll_default_onehundred_percent_base" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_assignment_poll_default_backend') THEN
-        CREATE TYPE enum_meeting_assignment_poll_default_backend AS ENUM ('long', 'fast');
-    ELSE
-        RAISE NOTICE 'type "enum_meeting_assignment_poll_default_backend" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_poll_ballot_paper_selection') THEN
-        CREATE TYPE enum_meeting_poll_ballot_paper_selection AS ENUM ('NUMBER_OF_DELEGATES', 'NUMBER_OF_ALL_PARTICIPANTS', 'CUSTOM_NUMBER');
-    ELSE
-        RAISE NOTICE 'type "enum_meeting_poll_ballot_paper_selection" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_poll_default_onehundred_percent_base') THEN
-        CREATE TYPE enum_meeting_poll_default_onehundred_percent_base AS ENUM ('Y', 'YN', 'YNA', 'N', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled');
-    ELSE
-        RAISE NOTICE 'type "enum_meeting_poll_default_onehundred_percent_base" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_poll_default_backend') THEN
-        CREATE TYPE enum_meeting_poll_default_backend AS ENUM ('long', 'fast');
-    ELSE
-        RAISE NOTICE 'type "enum_meeting_poll_default_backend" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_group_permissions') THEN
-        CREATE TYPE enum_group_permissions AS ENUM ('agenda_item.can_manage', 'agenda_item.can_see', 'agenda_item.can_see_internal', 'agenda_item.can_manage_moderator_notes', 'agenda_item.can_see_moderator_notes', 'assignment.can_manage', 'assignment.can_nominate_other', 'assignment.can_nominate_self', 'assignment.can_see', 'chat.can_manage', 'list_of_speakers.can_be_speaker', 'list_of_speakers.can_manage', 'list_of_speakers.can_see', 'mediafile.can_manage', 'mediafile.can_see', 'meeting.can_manage_logos_and_fonts', 'meeting.can_manage_settings', 'meeting.can_see_autopilot', 'meeting.can_see_frontpage', 'meeting.can_see_history', 'meeting.can_see_livestream', 'motion.can_create', 'motion.can_create_amendments', 'motion.can_forward', 'motion.can_manage', 'motion.can_manage_metadata', 'motion.can_manage_polls', 'motion.can_see', 'motion.can_see_internal', 'motion.can_support', 'poll.can_manage', 'projector.can_manage', 'projector.can_see', 'tag.can_manage', 'user.can_manage', 'user.can_manage_presence', 'user.can_see_sensitive_data', 'user.can_see', 'user.can_update');
-    ELSE
-        RAISE NOTICE 'type "enum_group_permissions" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_agenda_item_type') THEN
-        CREATE TYPE enum_agenda_item_type AS ENUM ('common', 'internal', 'hidden');
-    ELSE
-        RAISE NOTICE 'type "enum_agenda_item_type" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_speaker_speech_state') THEN
-        CREATE TYPE enum_speaker_speech_state AS ENUM ('contribution', 'pro', 'contra', 'intervention', 'interposed_question');
-    ELSE
-        RAISE NOTICE 'type "enum_speaker_speech_state" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_motion_change_recommendation_type') THEN
-        CREATE TYPE enum_motion_change_recommendation_type AS ENUM ('replacement', 'insertion', 'deletion', 'other');
-    ELSE
-        RAISE NOTICE 'type "enum_motion_change_recommendation_type" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_motion_state_css_class') THEN
-        CREATE TYPE enum_motion_state_css_class AS ENUM ('grey', 'red', 'green', 'lightblue', 'yellow');
-    ELSE
-        RAISE NOTICE 'type "enum_motion_state_css_class" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_motion_state_restrictions') THEN
-        CREATE TYPE enum_motion_state_restrictions AS ENUM ('motion.can_see_internal', 'motion.can_manage_metadata', 'motion.can_manage', 'is_submitter');
-    ELSE
-        RAISE NOTICE 'type "enum_motion_state_restrictions" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_motion_state_merge_amendment_into_final') THEN
-        CREATE TYPE enum_motion_state_merge_amendment_into_final AS ENUM ('do_not_merge', 'undefined', 'do_merge');
-    ELSE
-        RAISE NOTICE 'type "enum_motion_state_merge_amendment_into_final" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_poll_type') THEN
-        CREATE TYPE enum_poll_type AS ENUM ('analog', 'named', 'pseudoanonymous', 'cryptographic');
-    ELSE
-        RAISE NOTICE 'type "enum_poll_type" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_poll_backend') THEN
-        CREATE TYPE enum_poll_backend AS ENUM ('long', 'fast');
-    ELSE
-        RAISE NOTICE 'type "enum_poll_backend" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_poll_pollmethod') THEN
-        CREATE TYPE enum_poll_pollmethod AS ENUM ('Y', 'YN', 'YNA', 'N');
-    ELSE
-        RAISE NOTICE 'type "enum_poll_pollmethod" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_poll_state') THEN
-        CREATE TYPE enum_poll_state AS ENUM ('created', 'started', 'finished', 'published');
-    ELSE
-        RAISE NOTICE 'type "enum_poll_state" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_poll_onehundred_percent_base') THEN
-        CREATE TYPE enum_poll_onehundred_percent_base AS ENUM ('Y', 'YN', 'YNA', 'N', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled');
-    ELSE
-        RAISE NOTICE 'type "enum_poll_onehundred_percent_base" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_assignment_phase') THEN
-        CREATE TYPE enum_assignment_phase AS ENUM ('search', 'voting', 'finished');
-    ELSE
-        RAISE NOTICE 'type "enum_assignment_phase" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_action_worker_state') THEN
-        CREATE TYPE enum_action_worker_state AS ENUM ('running', 'end', 'aborted');
-    ELSE
-        RAISE NOTICE 'type "enum_action_worker_state" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_import_preview_name') THEN
-        CREATE TYPE enum_import_preview_name AS ENUM ('account', 'participant', 'topic', 'committee', 'motion');
-    ELSE
-        RAISE NOTICE 'type "enum_import_preview_name" already exists, skipping';
-    END IF;
-END$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_import_preview_state') THEN
-        CREATE TYPE enum_import_preview_state AS ENUM ('warning', 'error', 'done');
-    ELSE
-        RAISE NOTICE 'type "enum_import_preview_state" already exists, skipping';
-    END IF;
-END$$;
-
 
 -- Table definitions
 CREATE TABLE IF NOT EXISTS organization_t (
@@ -450,7 +72,7 @@ CREATE TABLE IF NOT EXISTS organization_t (
     enable_chat boolean,
     limit_of_meetings integer CONSTRAINT minimum_limit_of_meetings CHECK (limit_of_meetings >= 0) DEFAULT 0,
     limit_of_users integer CONSTRAINT minimum_limit_of_users CHECK (limit_of_users >= 0) DEFAULT 0,
-    default_language enum_organization_default_language NOT NULL,
+    default_language varchar(256) NOT NULL CONSTRAINT enum_organization_default_language CHECK (default_language IN ('en', 'de', 'it', 'es', 'ru', 'cs', 'fr')),
     saml_enabled boolean,
     saml_login_button_text varchar(256) DEFAULT 'SAML login',
     saml_attr_mapping jsonb,
@@ -505,7 +127,7 @@ CREATE TABLE IF NOT EXISTS user_t (
     last_email_sent timestamptz,
     is_demo_user boolean,
     last_login timestamptz,
-    organization_management_level enum_user_organization_management_level,
+    organization_management_level varchar(256) CONSTRAINT enum_user_organization_management_level CHECK (organization_management_level IN ('superadmin', 'can_manage_organization', 'can_manage_users')),
     meeting_ids integer[],
     organization_id integer GENERATED ALWAYS AS (1) STORED NOT NULL
 );
@@ -624,7 +246,7 @@ CREATE TABLE IF NOT EXISTS meeting_t (
     start_time timestamptz,
     end_time timestamptz,
     imported_at timestamptz,
-    language enum_meeting_language NOT NULL,
+    language varchar(256) NOT NULL CONSTRAINT enum_meeting_language CHECK (language IN ('en', 'de', 'it', 'es', 'ru', 'cs', 'fr')) CONSTRAINT minlength_language CHECK (char_length(language) >= 1),
     jitsi_domain varchar(256),
     jitsi_room_name varchar(256),
     jitsi_room_password varchar(256),
@@ -641,7 +263,7 @@ CREATE TABLE IF NOT EXISTS meeting_t (
     conference_auto_connect_next_speakers integer DEFAULT 0,
     conference_enable_helpdesk boolean DEFAULT False,
     applause_enable boolean DEFAULT False,
-    applause_type enum_meeting_applause_type DEFAULT 'applause-type-bar',
+    applause_type varchar(256) CONSTRAINT enum_meeting_applause_type CHECK (applause_type IN ('applause-type-bar', 'applause-type-particles')) DEFAULT 'applause-type-bar',
     applause_show_level boolean DEFAULT False,
     applause_min_amount integer CONSTRAINT minimum_applause_min_amount CHECK (applause_min_amount >= 0) DEFAULT 1,
     applause_max_amount integer CONSTRAINT minimum_applause_max_amount CHECK (applause_max_amount >= 0) DEFAULT 0,
@@ -649,22 +271,22 @@ CREATE TABLE IF NOT EXISTS meeting_t (
     applause_particle_image_url varchar(256),
     projector_countdown_default_time integer NOT NULL DEFAULT 60,
     projector_countdown_warning_time integer NOT NULL CONSTRAINT minimum_projector_countdown_warning_time CHECK (projector_countdown_warning_time >= 0) DEFAULT 0,
-    export_csv_encoding enum_meeting_export_csv_encoding DEFAULT 'utf-8',
+    export_csv_encoding varchar(256) CONSTRAINT enum_meeting_export_csv_encoding CHECK (export_csv_encoding IN ('utf-8', 'iso-8859-15')) DEFAULT 'utf-8',
     export_csv_separator varchar(256) DEFAULT ';',
-    export_pdf_pagenumber_alignment enum_meeting_export_pdf_pagenumber_alignment DEFAULT 'center',
-    export_pdf_fontsize enum_meeting_export_pdf_fontsize DEFAULT '10',
+    export_pdf_pagenumber_alignment varchar(256) CONSTRAINT enum_meeting_export_pdf_pagenumber_alignment CHECK (export_pdf_pagenumber_alignment IN ('left', 'right', 'center')) DEFAULT 'center',
+    export_pdf_fontsize integer CONSTRAINT enum_meeting_export_pdf_fontsize CHECK (export_pdf_fontsize IN (10, 11, 12)) DEFAULT 10,
     export_pdf_line_height real CONSTRAINT minimum_export_pdf_line_height CHECK (export_pdf_line_height >= 1.0) DEFAULT 1.25,
     export_pdf_page_margin_left integer CONSTRAINT minimum_export_pdf_page_margin_left CHECK (export_pdf_page_margin_left >= 0) DEFAULT 20,
     export_pdf_page_margin_top integer CONSTRAINT minimum_export_pdf_page_margin_top CHECK (export_pdf_page_margin_top >= 0) DEFAULT 25,
     export_pdf_page_margin_right integer CONSTRAINT minimum_export_pdf_page_margin_right CHECK (export_pdf_page_margin_right >= 0) DEFAULT 20,
     export_pdf_page_margin_bottom integer CONSTRAINT minimum_export_pdf_page_margin_bottom CHECK (export_pdf_page_margin_bottom >= 0) DEFAULT 20,
-    export_pdf_pagesize enum_meeting_export_pdf_pagesize DEFAULT 'A4',
+    export_pdf_pagesize varchar(256) CONSTRAINT enum_meeting_export_pdf_pagesize CHECK (export_pdf_pagesize IN ('A4', 'A5')) DEFAULT 'A4',
     agenda_show_subtitles boolean DEFAULT False,
     agenda_enable_numbering boolean DEFAULT True,
     agenda_number_prefix varchar(20),
-    agenda_numeral_system enum_meeting_agenda_numeral_system DEFAULT 'arabic',
-    agenda_item_creation enum_meeting_agenda_item_creation DEFAULT 'default_no',
-    agenda_new_items_default_visibility enum_meeting_agenda_new_items_default_visibility DEFAULT 'internal',
+    agenda_numeral_system varchar(256) CONSTRAINT enum_meeting_agenda_numeral_system CHECK (agenda_numeral_system IN ('arabic', 'roman')) DEFAULT 'arabic',
+    agenda_item_creation varchar(256) CONSTRAINT enum_meeting_agenda_item_creation CHECK (agenda_item_creation IN ('always', 'never', 'default_yes', 'default_no')) DEFAULT 'default_no',
+    agenda_new_items_default_visibility varchar(256) CONSTRAINT enum_meeting_agenda_new_items_default_visibility CHECK (agenda_new_items_default_visibility IN ('common', 'internal', 'hidden')) DEFAULT 'internal',
     agenda_show_internal_items_on_projector boolean DEFAULT False,
     list_of_speakers_amount_last_on_projector integer CONSTRAINT minimum_list_of_speakers_amount_last_on_projector CHECK (list_of_speakers_amount_last_on_projector >= -1) DEFAULT 0,
     list_of_speakers_amount_next_on_projector integer CONSTRAINT minimum_list_of_speakers_amount_next_on_projector CHECK (list_of_speakers_amount_next_on_projector >= -1) DEFAULT -1,
@@ -689,7 +311,7 @@ CREATE TABLE IF NOT EXISTS meeting_t (
     motions_default_amendment_workflow_id integer NOT NULL,
     motions_default_statute_amendment_workflow_id integer NOT NULL,
     motions_preamble text DEFAULT 'The assembly may decide:',
-    motions_default_line_numbering enum_meeting_motions_default_line_numbering DEFAULT 'outside',
+    motions_default_line_numbering varchar(256) CONSTRAINT enum_meeting_motions_default_line_numbering CHECK (motions_default_line_numbering IN ('outside', 'inline', 'none')) DEFAULT 'outside',
     motions_line_length integer CONSTRAINT minimum_motions_line_length CHECK (motions_line_length >= 40) DEFAULT 85,
     motions_reason_required boolean DEFAULT False,
     motions_enable_text_on_projector boolean DEFAULT True,
@@ -701,9 +323,9 @@ CREATE TABLE IF NOT EXISTS meeting_t (
     motions_recommendations_by varchar(256),
     motions_block_slide_columns integer CONSTRAINT minimum_motions_block_slide_columns CHECK (motions_block_slide_columns >= 1),
     motions_statute_recommendations_by varchar(256),
-    motions_recommendation_text_mode enum_meeting_motions_recommendation_text_mode DEFAULT 'diff',
-    motions_default_sorting enum_meeting_motions_default_sorting DEFAULT 'number',
-    motions_number_type enum_meeting_motions_number_type DEFAULT 'per_category',
+    motions_recommendation_text_mode varchar(256) CONSTRAINT enum_meeting_motions_recommendation_text_mode CHECK (motions_recommendation_text_mode IN ('original', 'changed', 'diff', 'agreed')) DEFAULT 'diff',
+    motions_default_sorting varchar(256) CONSTRAINT enum_meeting_motions_default_sorting CHECK (motions_default_sorting IN ('number', 'weight')) DEFAULT 'number',
+    motions_number_type varchar(256) CONSTRAINT enum_meeting_motions_number_type CHECK (motions_number_type IN ('per_category', 'serially_numbered', 'manually')) DEFAULT 'per_category',
     motions_number_min_digits integer DEFAULT 2,
     motions_number_with_blank boolean DEFAULT False,
     motions_statutes_enabled boolean DEFAULT False,
@@ -711,7 +333,7 @@ CREATE TABLE IF NOT EXISTS meeting_t (
     motions_amendments_in_main_list boolean DEFAULT True,
     motions_amendments_of_amendments boolean DEFAULT False,
     motions_amendments_prefix varchar(256) DEFAULT '-Ä',
-    motions_amendments_text_mode enum_meeting_motions_amendments_text_mode DEFAULT 'paragraph',
+    motions_amendments_text_mode varchar(256) CONSTRAINT enum_meeting_motions_amendments_text_mode CHECK (motions_amendments_text_mode IN ('freestyle', 'fulltext', 'paragraph')) DEFAULT 'paragraph',
     motions_amendments_multiple_paragraphs boolean DEFAULT True,
     motions_supporters_min_amount integer CONSTRAINT minimum_motions_supporters_min_amount CHECK (motions_supporters_min_amount >= 0) DEFAULT 0,
     motions_enable_editor boolean,
@@ -720,11 +342,11 @@ CREATE TABLE IF NOT EXISTS meeting_t (
     motions_export_preamble text,
     motions_export_submitter_recommendation boolean DEFAULT True,
     motions_export_follow_recommendation boolean DEFAULT False,
-    motion_poll_ballot_paper_selection enum_meeting_motion_poll_ballot_paper_selection DEFAULT 'CUSTOM_NUMBER',
+    motion_poll_ballot_paper_selection varchar(256) CONSTRAINT enum_meeting_motion_poll_ballot_paper_selection CHECK (motion_poll_ballot_paper_selection IN ('NUMBER_OF_DELEGATES', 'NUMBER_OF_ALL_PARTICIPANTS', 'CUSTOM_NUMBER')) DEFAULT 'CUSTOM_NUMBER',
     motion_poll_ballot_paper_number integer DEFAULT 8,
     motion_poll_default_type varchar(256) DEFAULT 'pseudoanonymous',
-    motion_poll_default_onehundred_percent_base enum_meeting_motion_poll_default_onehundred_percent_base DEFAULT 'YNA',
-    motion_poll_default_backend enum_meeting_motion_poll_default_backend DEFAULT 'fast',
+    motion_poll_default_onehundred_percent_base varchar(256) CONSTRAINT enum_meeting_motion_poll_default_onehundred_percent_base CHECK (motion_poll_default_onehundred_percent_base IN ('Y', 'YN', 'YNA', 'N', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled')) DEFAULT 'YNA',
+    motion_poll_default_backend varchar(256) CONSTRAINT enum_meeting_motion_poll_default_backend CHECK (motion_poll_default_backend IN ('long', 'fast')) DEFAULT 'fast',
     users_enable_presence_view boolean DEFAULT False,
     users_enable_vote_weight boolean DEFAULT False,
     users_allow_self_set_present boolean DEFAULT True,
@@ -732,7 +354,7 @@ CREATE TABLE IF NOT EXISTS meeting_t (
     users_pdf_welcometext text DEFAULT '[Place for your welcome and help text.]',
     users_pdf_wlan_ssid varchar(256),
     users_pdf_wlan_password varchar(256),
-    users_pdf_wlan_encryption enum_meeting_users_pdf_wlan_encryption DEFAULT 'WPA',
+    users_pdf_wlan_encryption varchar(256) CONSTRAINT enum_meeting_users_pdf_wlan_encryption CHECK (users_pdf_wlan_encryption IN ('', 'WEP', 'WPA', 'nopass')) DEFAULT 'WPA',
     users_email_sender varchar(256) DEFAULT 'OpenSlides',
     users_email_replyto varchar(256),
     users_email_subject varchar(256) DEFAULT 'OpenSlides access data',
@@ -749,22 +371,22 @@ This email was generated automatically.',
     users_enable_vote_delegations boolean,
     assignments_export_title varchar(256) DEFAULT 'Elections',
     assignments_export_preamble text,
-    assignment_poll_ballot_paper_selection enum_meeting_assignment_poll_ballot_paper_selection DEFAULT 'CUSTOM_NUMBER',
+    assignment_poll_ballot_paper_selection varchar(256) CONSTRAINT enum_meeting_assignment_poll_ballot_paper_selection CHECK (assignment_poll_ballot_paper_selection IN ('NUMBER_OF_DELEGATES', 'NUMBER_OF_ALL_PARTICIPANTS', 'CUSTOM_NUMBER')) DEFAULT 'CUSTOM_NUMBER',
     assignment_poll_ballot_paper_number integer DEFAULT 8,
     assignment_poll_add_candidates_to_list_of_speakers boolean DEFAULT False,
     assignment_poll_enable_max_votes_per_option boolean DEFAULT False,
     assignment_poll_sort_poll_result_by_votes boolean DEFAULT True,
     assignment_poll_default_type varchar(256) DEFAULT 'pseudoanonymous',
     assignment_poll_default_method varchar(256) DEFAULT 'Y',
-    assignment_poll_default_onehundred_percent_base enum_meeting_assignment_poll_default_onehundred_percent_base DEFAULT 'valid',
-    assignment_poll_default_backend enum_meeting_assignment_poll_default_backend DEFAULT 'fast',
-    poll_ballot_paper_selection enum_meeting_poll_ballot_paper_selection,
+    assignment_poll_default_onehundred_percent_base varchar(256) CONSTRAINT enum_meeting_assignment_poll_default_onehundred_percent_base CHECK (assignment_poll_default_onehundred_percent_base IN ('Y', 'YN', 'YNA', 'N', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled')) DEFAULT 'valid',
+    assignment_poll_default_backend varchar(256) CONSTRAINT enum_meeting_assignment_poll_default_backend CHECK (assignment_poll_default_backend IN ('long', 'fast')) DEFAULT 'fast',
+    poll_ballot_paper_selection varchar(256) CONSTRAINT enum_meeting_poll_ballot_paper_selection CHECK (poll_ballot_paper_selection IN ('NUMBER_OF_DELEGATES', 'NUMBER_OF_ALL_PARTICIPANTS', 'CUSTOM_NUMBER')),
     poll_ballot_paper_number integer,
     poll_sort_poll_result_by_votes boolean,
     poll_default_type varchar(256) DEFAULT 'analog',
     poll_default_method varchar(256),
-    poll_default_onehundred_percent_base enum_meeting_poll_default_onehundred_percent_base DEFAULT 'YNA',
-    poll_default_backend enum_meeting_poll_default_backend DEFAULT 'fast',
+    poll_default_onehundred_percent_base varchar(256) CONSTRAINT enum_meeting_poll_default_onehundred_percent_base CHECK (poll_default_onehundred_percent_base IN ('Y', 'YN', 'YNA', 'N', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled')) DEFAULT 'YNA',
+    poll_default_backend varchar(256) CONSTRAINT enum_meeting_poll_default_backend CHECK (poll_default_backend IN ('long', 'fast')) DEFAULT 'fast',
     poll_couple_countdown boolean DEFAULT True,
     logo_projector_main_id integer,
     logo_projector_header_id integer,
@@ -816,7 +438,7 @@ CREATE TABLE IF NOT EXISTS group_t (
     id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
     external_id varchar(256),
     name varchar(256) NOT NULL,
-    permissions enum_group_permissions[],
+    permissions varchar(256)[] CONSTRAINT enum_group_permissions CHECK (permissions <@ ARRAY['agenda_item.can_manage', 'agenda_item.can_see', 'agenda_item.can_see_internal', 'agenda_item.can_manage_moderator_notes', 'agenda_item.can_see_moderator_notes', 'assignment.can_manage', 'assignment.can_nominate_other', 'assignment.can_nominate_self', 'assignment.can_see', 'chat.can_manage', 'list_of_speakers.can_be_speaker', 'list_of_speakers.can_manage', 'list_of_speakers.can_see', 'mediafile.can_manage', 'mediafile.can_see', 'meeting.can_manage_logos_and_fonts', 'meeting.can_manage_settings', 'meeting.can_see_autopilot', 'meeting.can_see_frontpage', 'meeting.can_see_history', 'meeting.can_see_livestream', 'motion.can_create', 'motion.can_create_amendments', 'motion.can_forward', 'motion.can_manage', 'motion.can_manage_metadata', 'motion.can_manage_polls', 'motion.can_see', 'motion.can_see_internal', 'motion.can_support', 'poll.can_manage', 'projector.can_manage', 'projector.can_see', 'tag.can_manage', 'user.can_manage', 'user.can_manage_presence', 'user.can_see_sensitive_data', 'user.can_see', 'user.can_update']::varchar[]),
     weight integer,
     used_as_motion_poll_default_id integer,
     used_as_assignment_poll_default_id integer,
@@ -858,7 +480,7 @@ CREATE TABLE IF NOT EXISTS agenda_item_t (
     item_number varchar(256),
     comment varchar(256),
     closed boolean DEFAULT False,
-    type enum_agenda_item_type DEFAULT 'common',
+    type varchar(256) CONSTRAINT enum_agenda_item_type CHECK (type IN ('common', 'internal', 'hidden')) DEFAULT 'common',
     duration integer CONSTRAINT minimum_duration CHECK (duration >= 0),
     moderator_notes text,
     is_internal boolean,
@@ -939,7 +561,7 @@ CREATE TABLE IF NOT EXISTS speaker_t (
     unpause_time timestamptz,
     total_pause integer,
     weight integer DEFAULT 10000,
-    speech_state enum_speaker_speech_state,
+    speech_state varchar(256) CONSTRAINT enum_speaker_speech_state CHECK (speech_state IN ('contribution', 'pro', 'contra', 'intervention', 'interposed_question')),
     note varchar(250),
     point_of_order boolean,
     list_of_speakers_id integer NOT NULL,
@@ -1098,7 +720,7 @@ CREATE TABLE IF NOT EXISTS motion_change_recommendation_t (
     id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
     rejected boolean DEFAULT False,
     internal boolean DEFAULT False,
-    type enum_motion_change_recommendation_type DEFAULT 'replacement',
+    type varchar(256) CONSTRAINT enum_motion_change_recommendation_type CHECK (type IN ('replacement', 'insertion', 'deletion', 'other')) DEFAULT 'replacement',
     other_description varchar(256),
     line_from integer CONSTRAINT minimum_line_from CHECK (line_from >= 0),
     line_to integer CONSTRAINT minimum_line_to CHECK (line_to >= 0),
@@ -1117,15 +739,15 @@ CREATE TABLE IF NOT EXISTS motion_state_t (
     weight integer NOT NULL,
     recommendation_label varchar(256),
     is_internal boolean,
-    css_class enum_motion_state_css_class NOT NULL DEFAULT 'lightblue',
-    restrictions enum_motion_state_restrictions[] DEFAULT '{}',
+    css_class varchar(256) NOT NULL CONSTRAINT enum_motion_state_css_class CHECK (css_class IN ('grey', 'red', 'green', 'lightblue', 'yellow')) DEFAULT 'lightblue',
+    restrictions varchar(256)[] CONSTRAINT enum_motion_state_restrictions CHECK (restrictions <@ ARRAY['motion.can_see_internal', 'motion.can_manage_metadata', 'motion.can_manage', 'is_submitter']::varchar[]) DEFAULT '{}',
     allow_support boolean DEFAULT False,
     allow_create_poll boolean DEFAULT False,
     allow_submitter_edit boolean DEFAULT False,
     set_number boolean DEFAULT True,
     show_state_extension_field boolean DEFAULT False,
     show_recommendation_extension_field boolean DEFAULT False,
-    merge_amendment_into_final enum_motion_state_merge_amendment_into_final DEFAULT 'undefined',
+    merge_amendment_into_final varchar(256) CONSTRAINT enum_motion_state_merge_amendment_into_final CHECK (merge_amendment_into_final IN ('do_not_merge', 'undefined', 'do_merge')) DEFAULT 'undefined',
     allow_motion_forwarding boolean DEFAULT False,
     set_workflow_timestamp boolean DEFAULT False,
     submitter_withdraw_state_id integer,
@@ -1167,18 +789,18 @@ CREATE TABLE IF NOT EXISTS poll_t (
     id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
     description text,
     title varchar(256) NOT NULL,
-    type enum_poll_type NOT NULL,
-    backend enum_poll_backend NOT NULL DEFAULT 'fast',
+    type varchar(256) NOT NULL CONSTRAINT enum_poll_type CHECK (type IN ('analog', 'named', 'pseudoanonymous', 'cryptographic')),
+    backend varchar(256) NOT NULL CONSTRAINT enum_poll_backend CHECK (backend IN ('long', 'fast')) DEFAULT 'fast',
     is_pseudoanonymized boolean,
-    pollmethod enum_poll_pollmethod NOT NULL,
-    state enum_poll_state DEFAULT 'created',
+    pollmethod varchar(256) NOT NULL CONSTRAINT enum_poll_pollmethod CHECK (pollmethod IN ('Y', 'YN', 'YNA', 'N')),
+    state varchar(256) CONSTRAINT enum_poll_state CHECK (state IN ('created', 'started', 'finished', 'published')) DEFAULT 'created',
     min_votes_amount integer CONSTRAINT minimum_min_votes_amount CHECK (min_votes_amount >= 1) DEFAULT 1,
     max_votes_amount integer CONSTRAINT minimum_max_votes_amount CHECK (max_votes_amount >= 1) DEFAULT 1,
     max_votes_per_option integer CONSTRAINT minimum_max_votes_per_option CHECK (max_votes_per_option >= 1) DEFAULT 1,
     global_yes boolean DEFAULT False,
     global_no boolean DEFAULT False,
     global_abstain boolean DEFAULT False,
-    onehundred_percent_base enum_poll_onehundred_percent_base NOT NULL DEFAULT 'disabled',
+    onehundred_percent_base varchar(256) NOT NULL CONSTRAINT enum_poll_onehundred_percent_base CHECK (onehundred_percent_base IN ('Y', 'YN', 'YNA', 'N', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled')) DEFAULT 'disabled',
     votesvalid decimal(6),
     votesinvalid decimal(6),
     votescast decimal(6),
@@ -1250,7 +872,7 @@ CREATE TABLE IF NOT EXISTS assignment_t (
     title varchar(256) NOT NULL,
     description text,
     open_posts integer CONSTRAINT minimum_open_posts CHECK (open_posts >= 0) DEFAULT 0,
-    phase enum_assignment_phase DEFAULT 'search',
+    phase varchar(256) CONSTRAINT enum_assignment_phase CHECK (phase IN ('search', 'voting', 'finished')) DEFAULT 'search',
     default_poll_description text,
     number_poll_candidates boolean,
     sequential_number integer NOT NULL,
@@ -1442,7 +1064,7 @@ CREATE TABLE IF NOT EXISTS chat_message_t (
 CREATE TABLE IF NOT EXISTS action_worker_t (
     id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
     name varchar(256) NOT NULL,
-    state enum_action_worker_state NOT NULL,
+    state varchar(256) NOT NULL CONSTRAINT enum_action_worker_state CHECK (state IN ('running', 'end', 'aborted')),
     created timestamptz NOT NULL,
     timestamp timestamptz NOT NULL,
     result jsonb
@@ -1453,8 +1075,8 @@ CREATE TABLE IF NOT EXISTS action_worker_t (
 
 CREATE TABLE IF NOT EXISTS import_preview_t (
     id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
-    name enum_import_preview_name NOT NULL,
-    state enum_import_preview_state NOT NULL,
+    name varchar(256) NOT NULL CONSTRAINT enum_import_preview_name CHECK (name IN ('account', 'participant', 'topic', 'committee', 'motion')),
+    state varchar(256) NOT NULL CONSTRAINT enum_import_preview_state CHECK (state IN ('warning', 'error', 'done')),
     created timestamptz NOT NULL,
     result jsonb
 );

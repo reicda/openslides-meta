@@ -4,6 +4,9 @@ from typing import cast
 import psycopg
 import pytest
 from psycopg import sql
+from sql import Table
+from sql.aggregate import *
+from sql.conditionals import *
 from src.db_utils import DbUtils
 from tests.base import BaseTestCase
 
@@ -295,3 +298,56 @@ class Relations(BaseTestCase):
                 with self.db_connection.transaction():
                     DbUtils.insert_wrapper(curs, "gm_organization_tag_tagged_ids_t", {"organization_tag_id": tag_id, "tagged_id": f"committee/{self.committee1_id}"})
             assert 'duplicate key value violates unique constraint' in str(e)
+
+class EnumTests(BaseTestCase):
+    def test_correct_singular_values_in_meeting(self) -> None:
+        meeting_t = Table("meeting_t")
+        with self.db_connection.cursor() as curs:
+            with self.db_connection.transaction():
+                meeting = curs.execute(*meeting_t.select(meeting_t.language, meeting_t.export_pdf_fontsize, where=meeting_t.id==1)).fetchone()
+                assert meeting["language"] == "en"
+                assert meeting["export_pdf_fontsize"] == 10
+                meeting = curs.execute(*meeting_t.update([meeting_t.language, meeting_t.export_pdf_fontsize], ["de", 11], where=meeting_t.id==1, returning=[meeting_t.id, meeting_t.language])).fetchone()
+        assert meeting["language"] == "de"
+
+    def test_wrong_language_in_meeting(self) -> None:
+        meeting_t = Table("meeting_t")
+        with self.db_connection.cursor() as curs:
+            with pytest.raises(psycopg.DatabaseError) as e:
+                with self.db_connection.transaction():
+                    curs.execute(*meeting_t.update([meeting_t.language], ["xx"], where=meeting_t.id==1))
+        assert 'violates check constraint "enum_meeting_language"' in str(e)
+
+    def test_wrong_pdf_fontsize_in_meeting(self) -> None:
+        meeting_t = Table("meeting_t")
+        with self.db_connection.cursor() as curs:
+            with pytest.raises(psycopg.DatabaseError) as e:
+                with self.db_connection.transaction():
+                    curs.execute(*meeting_t.update([meeting_t.export_pdf_fontsize], [22], where=meeting_t.id==1))
+        assert 'violates check constraint "enum_meeting_export_pdf_fontsize"' in str(e)
+
+    def test_correct_permissions_in_group(self) -> None:
+        group_t = Table("group_t")
+        with self.db_connection.cursor() as curs:
+            with self.db_connection.transaction():
+                group = curs.execute(*group_t.select(group_t.permissions, where=group_t.id==1)).fetchone()
+                assert "agenda_item.can_see_internal" in group["permissions"]
+                assert "user.can_see" in group["permissions"]
+                assert "chat.can_manage" not in group["permissions"]
+                group["permissions"].remove("user.can_see")
+                group["permissions"].append("chat.can_manage")
+                sql = tuple(group_t.update([group_t.permissions], [DbUtils.get_pg_array_for_cu(group["permissions"]),], where=group_t.id==1, returning=[group_t.permissions]))
+                group = curs.execute(*sql).fetchone()
+        assert "agenda_item.can_see_internal" in group["permissions"]
+        assert "user.can_see" not in group["permissions"]
+        assert "chat.can_manage" in group["permissions"]
+
+    def test_wrong_permissions_in_group(self) -> None:
+        group_t = Table("group_t")
+        with self.db_connection.cursor() as curs:
+            with self.db_connection.transaction():
+                with pytest.raises(psycopg.DatabaseError) as e:
+                    group = {"permissions": ["user.can_see", "invalid permission"]}
+                    sql = tuple(group_t.update([group_t.permissions], [DbUtils.get_pg_array_for_cu(group["permissions"]),], where=group_t.id==1, returning=[group_t.permissions]))
+                    group = curs.execute(*sql).fetchone()
+        assert 'violates check constraint "enum_group_permissions"' in str(e)

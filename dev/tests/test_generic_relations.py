@@ -4,6 +4,9 @@ from typing import cast
 import psycopg
 import pytest
 from psycopg import sql
+from sql import Table
+from sql.aggregate import *
+from sql.conditionals import *
 from src.db_utils import DbUtils
 from tests.base import BaseTestCase
 
@@ -248,15 +251,15 @@ class Relations(BaseTestCase):
                 tag_ids = DbUtils.insert_many_wrapper(curs, "organization_tag_t", [
                     {
                         "name": "Orga Tag 1",
-                        "color": 0xffee13
+                        "color": "#ffee13"
                     },
                     {
                         "name": "Orga Tag 2",
-                        "color": 0x12ee13
+                        "color": "#12ee13"
                     },
                     {
                         "name": "Orga Tag 3",
-                        "color": 0x00ee13
+                        "color": "#00ee13"
                     },
                 ])
                 DbUtils.insert_many_wrapper(curs, "gm_organization_tag_tagged_ids_t", [
@@ -279,7 +282,7 @@ class Relations(BaseTestCase):
         with pytest.raises(psycopg.DatabaseError) as e:
             with self.db_connection.cursor() as curs:
                 with self.db_connection.transaction():
-                    tag_id = DbUtils.insert_wrapper(curs, "organization_tag_t", {"name": "Orga Tag 1", "color": 0xffee13})
+                    tag_id = DbUtils.insert_wrapper(curs, "organization_tag_t", {"name": "Orga Tag 1", "color": "#ffee13"})
                     DbUtils.insert_many_wrapper(curs, "gm_organization_tag_tagged_ids_t", [
                         {"organization_tag_id": tag_id, "tagged_id": f"committee/{self.committee1_id}"},
                         {"organization_tag_id": tag_id, "tagged_id": f"motion_state/{self.meeting1_id}"},
@@ -289,9 +292,111 @@ class Relations(BaseTestCase):
     def test_generic_nGt_unique_constraint_error(self) -> None:
         with self.db_connection.cursor() as curs:
             with self.db_connection.transaction():
-                tag_id = DbUtils.insert_wrapper(curs, "organization_tag_t", {"name": "Orga Tag 1", "color": 0xffee13})
+                tag_id = DbUtils.insert_wrapper(curs, "organization_tag_t", {"name": "Orga Tag 1", "color": "#ffee13"})
                 DbUtils.insert_wrapper(curs, "gm_organization_tag_tagged_ids_t", {"organization_tag_id": tag_id, "tagged_id": f"committee/{self.committee1_id}"})
             with pytest.raises(psycopg.DatabaseError) as e:
                 with self.db_connection.transaction():
                     DbUtils.insert_wrapper(curs, "gm_organization_tag_tagged_ids_t", {"organization_tag_id": tag_id, "tagged_id": f"committee/{self.committee1_id}"})
             assert 'duplicate key value violates unique constraint' in str(e)
+
+class EnumTests(BaseTestCase):
+    def test_correct_singular_values_in_meeting(self) -> None:
+        meeting_t = Table("meeting_t")
+        with self.db_connection.cursor() as curs:
+            with self.db_connection.transaction():
+                meeting = curs.execute(*meeting_t.select(meeting_t.language, meeting_t.export_pdf_fontsize, where=meeting_t.id==1)).fetchone()
+                assert meeting["language"] == "en"
+                assert meeting["export_pdf_fontsize"] == 10
+                meeting = curs.execute(*meeting_t.update([meeting_t.language, meeting_t.export_pdf_fontsize], ["de", 11], where=meeting_t.id==1, returning=[meeting_t.id, meeting_t.language])).fetchone()
+        assert meeting["language"] == "de"
+
+    def test_wrong_language_in_meeting(self) -> None:
+        meeting_t = Table("meeting_t")
+        with self.db_connection.cursor() as curs:
+            with pytest.raises(psycopg.DatabaseError) as e:
+                with self.db_connection.transaction():
+                    curs.execute(*meeting_t.update([meeting_t.language], ["xx"], where=meeting_t.id==1))
+        assert 'violates check constraint "enum_meeting_language"' in str(e)
+
+    def test_wrong_pdf_fontsize_in_meeting(self) -> None:
+        meeting_t = Table("meeting_t")
+        with self.db_connection.cursor() as curs:
+            with pytest.raises(psycopg.DatabaseError) as e:
+                with self.db_connection.transaction():
+                    curs.execute(*meeting_t.update([meeting_t.export_pdf_fontsize], [22], where=meeting_t.id==1))
+        assert 'violates check constraint "enum_meeting_export_pdf_fontsize"' in str(e)
+
+    def test_correct_permissions_in_group(self) -> None:
+        group_t = Table("group_t")
+        with self.db_connection.cursor() as curs:
+            with self.db_connection.transaction():
+                group = curs.execute(*group_t.select(group_t.permissions, where=group_t.id==1)).fetchone()
+                assert "agenda_item.can_see_internal" in group["permissions"]
+                assert "user.can_see" in group["permissions"]
+                assert "chat.can_manage" not in group["permissions"]
+                group["permissions"].remove("user.can_see")
+                group["permissions"].append("chat.can_manage")
+                sql = tuple(group_t.update([group_t.permissions], [DbUtils.get_pg_array_for_cu(group["permissions"]),], where=group_t.id==1, returning=[group_t.permissions]))
+                group = curs.execute(*sql).fetchone()
+        assert "agenda_item.can_see_internal" in group["permissions"]
+        assert "user.can_see" not in group["permissions"]
+        assert "chat.can_manage" in group["permissions"]
+
+    def test_wrong_permissions_in_group(self) -> None:
+        group_t = Table("group_t")
+        with self.db_connection.cursor() as curs:
+            with self.db_connection.transaction():
+                with pytest.raises(psycopg.DatabaseError) as e:
+                    group = {"permissions": ["user.can_see", "invalid permission"]}
+                    sql = tuple(group_t.update([group_t.permissions], [DbUtils.get_pg_array_for_cu(group["permissions"]),], where=group_t.id==1, returning=[group_t.permissions]))
+                    group = curs.execute(*sql).fetchone()
+        assert 'violates check constraint "enum_group_permissions"' in str(e)
+
+class DataTypeTests(BaseTestCase):
+    def test_color_type_correct(self) -> None:
+        orga_tag_t = Table("organization_tag_t")
+        with self.db_connection.cursor() as curs:
+            with self.db_connection.transaction():
+                orga_tags = curs.execute(*orga_tag_t.insert(columns=[orga_tag_t.name, orga_tag_t.color], values=[['Foo', '#ff12cc'], ["Bar", "#1234AA"]], returning=[orga_tag_t.id, orga_tag_t.name, orga_tag_t.color])).fetchall()
+                assert orga_tags[0] == {"id": 1, "name": "Foo", "color": "#ff12cc"}
+                assert orga_tags[1] == {"id": 2, "name": "Bar", "color": "#1234AA"}
+
+    def test_color_type_not_null_error(self) -> None:
+        orga_tag_t = Table("organization_tag_t")
+        with self.db_connection.cursor() as curs:
+            with self.db_connection.transaction():
+                with pytest.raises(psycopg.DatabaseError) as e:
+                    curs.execute(*orga_tag_t.insert(columns=[orga_tag_t.name, orga_tag_t.color], values=[['Foo', None]], returning=[orga_tag_t.id, orga_tag_t.name, orga_tag_t.color])).fetchone()
+        assert 'null value in column "color" of relation "organization_tag_t" violates not-null constraint' in str(e)
+
+    def test_color_type_null_correct(self) -> None:
+        sl_t = Table("structure_level_t")
+        with self.db_connection.cursor() as curs:
+            with self.db_connection.transaction():
+                sl_id = curs.execute(*sl_t.insert(columns=[sl_t.name, sl_t.color, sl_t.meeting_id], values=[['Foo', None, 1]], returning=[sl_t.id])).fetchone()["id"]
+                structure_level = curs.execute(*sl_t.select(sl_t.id, sl_t.color, where=sl_t.id==sl_id)).fetchone()
+                assert structure_level == {"id": sl_id, "color": None}
+
+    def test_color_type_empty_string_error(self) -> None:
+        sl_t = Table("structure_level_t")
+        with self.db_connection.cursor() as curs:
+            with self.db_connection.transaction():
+                with pytest.raises(psycopg.DatabaseError) as e:
+                    curs.execute(*sl_t.insert(columns=[sl_t.name, sl_t.color, sl_t.meeting_id], values=[['Foo', '', 1]], returning=[sl_t.id])).fetchone()["id"]
+        assert """new row for relation "structure_level_t" violates check constraint "structure_level_t_color_check""" in str(e)
+
+    def test_color_type_wrong_string_error(self) -> None:
+        sl_t = Table("structure_level_t")
+        with self.db_connection.cursor() as curs:
+            with self.db_connection.transaction():
+                with pytest.raises(psycopg.DatabaseError) as e:
+                    curs.execute(*sl_t.insert(columns=[sl_t.name, sl_t.color, sl_t.meeting_id], values=[['Foo', 'xxx', 1]], returning=[sl_t.id])).fetchone()["id"]
+        assert """new row for relation "structure_level_t" violates check constraint "structure_level_t_color_check""" in str(e)
+
+    def test_color_type_to_long_string_error(self) -> None:
+        sl_t = Table("structure_level_t")
+        with self.db_connection.cursor() as curs:
+            with self.db_connection.transaction():
+                with pytest.raises(psycopg.DatabaseError) as e:
+                    curs.execute(*sl_t.insert(columns=[sl_t.name, sl_t.color, sl_t.meeting_id], values=[['Foo', '#1234567', 1]], returning=[sl_t.id])).fetchone()["id"]
+        assert """value too long for type character varying(7)""" in str(e)

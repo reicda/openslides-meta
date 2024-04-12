@@ -114,15 +114,6 @@ class HelperGetNames:
 
     @staticmethod
     @max_length
-    def get_enum_type_name(
-        fname: str,
-        table_name: str,
-    ) -> str:
-        """gets the name of an enum with prefix enum, table_name_name and fname"""
-        return f"enum_{table_name}_{fname}"
-
-    @staticmethod
-    @max_length
     def get_generic_valid_constraint_name(
         fname: str,
     ) -> str:
@@ -140,6 +131,15 @@ class HelperGetNames:
         - {owcolumn}
         """
         return f"unique_${own_table_name_with_ref_column}_${own_table_column}"
+
+    @staticmethod
+    @max_length
+    def get_check_enum_constraint_name(
+        table_name: str,
+        fname: str,
+    ) -> str:
+        """gets the name of check enum constraint"""
+        return f"enum_{table_name}_{fname}"
 
     @staticmethod
     @max_length

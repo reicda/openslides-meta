@@ -66,8 +66,8 @@ class SubstDict(TypedDict, total=False):
     default: str
     minimum: str
     minLength: str
-    enum_: str
     deferred: str
+    check_enum: str
 
 
 class GenerateCodeBlocks:
@@ -144,12 +144,6 @@ class GenerateCodeBlocks:
                     schema_zone_texts["undecided"] += error
                     errors.append(error)
                 else:
-                    if (enum_ := fdata.get("enum")) or (
-                        enum_ := fdata.get("items", {}).get("enum")
-                    ):
-                        pre_code += Helper.get_enum_type_definition(
-                            table_name, fname, enum_
-                        )
                     result, error = method_or_str(table_name, fname, fdata, type_)
                     for k, v in result.items():
                         schema_zone_texts[k] += v or ""  # type: ignore
@@ -243,12 +237,10 @@ class GenerateCodeBlocks:
         cls, table_name: str, fname: str, fdata: dict[str, Any], type_: str
     ) -> tuple[SchemaZoneTexts, str]:
         text = cast(SchemaZoneTexts, defaultdict(str))
-        subst, tmp = Helper.get_initials(table_name, fname, type_, fdata)
-        text.update(tmp)
+        subst, szt = Helper.get_initials(table_name, fname, type_, fdata)
+        text.update(szt)
         tmpl = FIELD_TYPES[type_]["pg_type"]
-        subst["type"] = tmpl.substitute(subst)
-        if default := fdata.get("default"):
-            subst["default"] = f" DEFAULT {int(default[1:], 16)}"
+        subst["type"] = tmpl.substitute({"field_name": fname})
         text["table"] = Helper.FIELD_TEMPLATE.substitute(subst)
         return text, ""
 
@@ -641,21 +633,7 @@ class Helper:
         """
     )
     FIELD_TEMPLATE = string.Template(
-        "    ${field_name} ${type}${primary_key}${required}${minimum}${minLength}${default},\n"
-    )
-    ENUM_DEFINITION_TEMPLATE = string.Template(
-        dedent(
-            """
-        DO $$$$
-        BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = '${enum_type}') THEN
-                CREATE TYPE ${enum_type} AS ENUM (${enumeration});
-            ELSE
-                RAISE NOTICE 'type "${enum_type}" already exists, skipping';
-            END IF;
-        END$$$$;
-        """
-        )
+        "    ${field_name} ${type}${primary_key}${required}${check_enum}${minimum}${minLength}${default},\n"
     )
     INTERMEDIATE_TABLE_N_M_RELATION_TEMPLATE = string.Template(
         dedent(
@@ -758,14 +736,23 @@ class Helper:
         )
 
     @staticmethod
-    def get_enum_type_definition(table_name: str, fname: str, enum_: list[Any]) -> str:
-        # enums per type are always strings in postgres
-        enumeration = ", ".join([f"'{str(item)}'" for item in enum_])
-        subst = {
-            "enum_type": HelperGetNames.get_enum_type_name(fname, table_name),
-            "enumeration": enumeration,
-        }
-        return Helper.ENUM_DEFINITION_TEMPLATE.substitute(subst)
+    def get_check_enum(
+        table_name: str, fname: str, enum_: list[Any], type_: str
+    ) -> str:
+        check_enum_constraint_name = HelperGetNames.get_check_enum_constraint_name(
+            table_name, fname
+        )
+        if type_.startswith("number"):
+            enumeration = ", ".join([str(item) for item in enum_])
+        elif type_.startswith("string"):
+            enumeration = ", ".join([f"'{item}'" for item in enum_])
+        else:
+            raise Exception(f"enum for type {type_} not implemented")
+        if type_.endswith("[]"):
+            condition = f"{fname} <@ ARRAY[{enumeration}]::varchar[]"
+        else:
+            condition = f"{fname} IN ({enumeration})"
+        return f" CONSTRAINT {check_enum_constraint_name} CHECK ({condition})"
 
     @staticmethod
     def get_foreign_key_table_constraint_as_alter_table(
@@ -901,12 +888,7 @@ class Helper:
             for form in Formatter().parse(Helper.FIELD_TEMPLATE.template)
         ]
         subst: SubstDict = cast(SubstDict, {k: "" for k in flist})
-        if (enum_ := fdata.get("enum")) or fdata.get("items"):
-            subst_type = HelperGetNames.get_enum_type_name(fname, table_name)
-            if not enum_:
-                subst_type += "[]"
-        else:
-            subst_type = FIELD_TYPES[type_]["pg_type"]
+        subst_type = FIELD_TYPES[type_]["pg_type"]
         subst.update({"field_name": fname, "type": subst_type})
         if fdata.get("required"):
             subst["required"] = " NOT NULL"
@@ -922,6 +904,10 @@ class Helper:
                 raise Exception(
                     f"{table_name}.{fname}: seems to be an invalid default value"
                 )
+        if (enum_ := fdata.get("enum")) or (
+            enum_ := fdata.get("items", {}).get("enum")
+        ):
+            subst["check_enum"] = Helper.get_check_enum(table_name, fname, enum_, type_)
         if (minimum := fdata.get("minimum")) is not None:
             minimum_constraint_name = HelperGetNames.get_minimum_constraint_name(fname)
             subst["minimum"] = (
@@ -1229,7 +1215,7 @@ FIELD_TYPES: dict[str, dict[str, Any]] = {
     },
     "color": {
         "pg_type": string.Template(
-            "integer CHECK (${field_name} >= 0 and ${field_name} <= 16777215)"
+            "varchar(7) CHECK (${field_name} is null or ${field_name} ~* '^#[a-f0-9]{6}$$')"
         ),
         "method": GenerateCodeBlocks.get_schema_color,
     },

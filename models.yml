@@ -982,7 +982,7 @@ meeting:
     default: center
     restriction_mode: B
   export_pdf_fontsize:
-    type: string
+    type: number
     enum:
       - 10
       - 11

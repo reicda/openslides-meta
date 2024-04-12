@@ -251,15 +251,15 @@ class Relations(BaseTestCase):
                 tag_ids = DbUtils.insert_many_wrapper(curs, "organization_tag_t", [
                     {
                         "name": "Orga Tag 1",
-                        "color": 0xffee13
+                        "color": "#ffee13"
                     },
                     {
                         "name": "Orga Tag 2",
-                        "color": 0x12ee13
+                        "color": "#12ee13"
                     },
                     {
                         "name": "Orga Tag 3",
-                        "color": 0x00ee13
+                        "color": "#00ee13"
                     },
                 ])
                 DbUtils.insert_many_wrapper(curs, "gm_organization_tag_tagged_ids_t", [
@@ -282,7 +282,7 @@ class Relations(BaseTestCase):
         with pytest.raises(psycopg.DatabaseError) as e:
             with self.db_connection.cursor() as curs:
                 with self.db_connection.transaction():
-                    tag_id = DbUtils.insert_wrapper(curs, "organization_tag_t", {"name": "Orga Tag 1", "color": 0xffee13})
+                    tag_id = DbUtils.insert_wrapper(curs, "organization_tag_t", {"name": "Orga Tag 1", "color": "#ffee13"})
                     DbUtils.insert_many_wrapper(curs, "gm_organization_tag_tagged_ids_t", [
                         {"organization_tag_id": tag_id, "tagged_id": f"committee/{self.committee1_id}"},
                         {"organization_tag_id": tag_id, "tagged_id": f"motion_state/{self.meeting1_id}"},
@@ -292,7 +292,7 @@ class Relations(BaseTestCase):
     def test_generic_nGt_unique_constraint_error(self) -> None:
         with self.db_connection.cursor() as curs:
             with self.db_connection.transaction():
-                tag_id = DbUtils.insert_wrapper(curs, "organization_tag_t", {"name": "Orga Tag 1", "color": 0xffee13})
+                tag_id = DbUtils.insert_wrapper(curs, "organization_tag_t", {"name": "Orga Tag 1", "color": "#ffee13"})
                 DbUtils.insert_wrapper(curs, "gm_organization_tag_tagged_ids_t", {"organization_tag_id": tag_id, "tagged_id": f"committee/{self.committee1_id}"})
             with pytest.raises(psycopg.DatabaseError) as e:
                 with self.db_connection.transaction():
@@ -351,3 +351,52 @@ class EnumTests(BaseTestCase):
                     sql = tuple(group_t.update([group_t.permissions], [DbUtils.get_pg_array_for_cu(group["permissions"]),], where=group_t.id==1, returning=[group_t.permissions]))
                     group = curs.execute(*sql).fetchone()
         assert 'violates check constraint "enum_group_permissions"' in str(e)
+
+class DataTypeTests(BaseTestCase):
+    def test_color_type_correct(self) -> None:
+        orga_tag_t = Table("organization_tag_t")
+        with self.db_connection.cursor() as curs:
+            with self.db_connection.transaction():
+                orga_tags = curs.execute(*orga_tag_t.insert(columns=[orga_tag_t.name, orga_tag_t.color], values=[['Foo', '#ff12cc'], ["Bar", "#1234AA"]], returning=[orga_tag_t.id, orga_tag_t.name, orga_tag_t.color])).fetchall()
+                assert orga_tags[0] == {"id": 1, "name": "Foo", "color": "#ff12cc"}
+                assert orga_tags[1] == {"id": 2, "name": "Bar", "color": "#1234AA"}
+
+    def test_color_type_not_null_error(self) -> None:
+        orga_tag_t = Table("organization_tag_t")
+        with self.db_connection.cursor() as curs:
+            with self.db_connection.transaction():
+                with pytest.raises(psycopg.DatabaseError) as e:
+                    curs.execute(*orga_tag_t.insert(columns=[orga_tag_t.name, orga_tag_t.color], values=[['Foo', None]], returning=[orga_tag_t.id, orga_tag_t.name, orga_tag_t.color])).fetchone()
+        assert 'null value in column "color" of relation "organization_tag_t" violates not-null constraint' in str(e)
+
+    def test_color_type_null_correct(self) -> None:
+        sl_t = Table("structure_level_t")
+        with self.db_connection.cursor() as curs:
+            with self.db_connection.transaction():
+                sl_id = curs.execute(*sl_t.insert(columns=[sl_t.name, sl_t.color, sl_t.meeting_id], values=[['Foo', None, 1]], returning=[sl_t.id])).fetchone()["id"]
+                structure_level = curs.execute(*sl_t.select(sl_t.id, sl_t.color, where=sl_t.id==sl_id)).fetchone()
+                assert structure_level == {"id": sl_id, "color": None}
+
+    def test_color_type_empty_string_error(self) -> None:
+        sl_t = Table("structure_level_t")
+        with self.db_connection.cursor() as curs:
+            with self.db_connection.transaction():
+                with pytest.raises(psycopg.DatabaseError) as e:
+                    curs.execute(*sl_t.insert(columns=[sl_t.name, sl_t.color, sl_t.meeting_id], values=[['Foo', '', 1]], returning=[sl_t.id])).fetchone()["id"]
+        assert """new row for relation "structure_level_t" violates check constraint "structure_level_t_color_check""" in str(e)
+
+    def test_color_type_wrong_string_error(self) -> None:
+        sl_t = Table("structure_level_t")
+        with self.db_connection.cursor() as curs:
+            with self.db_connection.transaction():
+                with pytest.raises(psycopg.DatabaseError) as e:
+                    curs.execute(*sl_t.insert(columns=[sl_t.name, sl_t.color, sl_t.meeting_id], values=[['Foo', 'xxx', 1]], returning=[sl_t.id])).fetchone()["id"]
+        assert """new row for relation "structure_level_t" violates check constraint "structure_level_t_color_check""" in str(e)
+
+    def test_color_type_to_long_string_error(self) -> None:
+        sl_t = Table("structure_level_t")
+        with self.db_connection.cursor() as curs:
+            with self.db_connection.transaction():
+                with pytest.raises(psycopg.DatabaseError) as e:
+                    curs.execute(*sl_t.insert(columns=[sl_t.name, sl_t.color, sl_t.meeting_id], values=[['Foo', '#1234567', 1]], returning=[sl_t.id])).fetchone()["id"]
+        assert """value too long for type character varying(7)""" in str(e)

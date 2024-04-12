@@ -237,12 +237,10 @@ class GenerateCodeBlocks:
         cls, table_name: str, fname: str, fdata: dict[str, Any], type_: str
     ) -> tuple[SchemaZoneTexts, str]:
         text = cast(SchemaZoneTexts, defaultdict(str))
-        subst, tmp = Helper.get_initials(table_name, fname, type_, fdata)
-        text.update(tmp)
+        subst, szt = Helper.get_initials(table_name, fname, type_, fdata)
+        text.update(szt)
         tmpl = FIELD_TYPES[type_]["pg_type"]
-        subst["type"] = tmpl.substitute(subst)
-        if default := fdata.get("default"):
-            subst["default"] = f" DEFAULT {int(default[1:], 16)}"
+        subst["type"] = tmpl.substitute({"field_name": fname})
         text["table"] = Helper.FIELD_TEMPLATE.substitute(subst)
         return text, ""
 
@@ -1217,7 +1215,7 @@ FIELD_TYPES: dict[str, dict[str, Any]] = {
     },
     "color": {
         "pg_type": string.Template(
-            "integer CHECK (${field_name} >= 0 and ${field_name} <= 16777215)"
+            "varchar(7) CHECK (${field_name} is null or ${field_name} ~* '^#[a-f0-9]{6}$$')"
         ),
         "method": GenerateCodeBlocks.get_schema_color,
     },

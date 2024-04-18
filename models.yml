@@ -411,8 +411,7 @@ user:
     restriction_mode: A
 
   meeting_ids:
-    type: relation-list
-    to: meeting/user_ids
+    type: number[]
     description: Calculated. All ids from meetings calculated via meeting_user and group_ids as integers.
     read_only: true
     # sql: todo
@@ -1842,8 +1841,7 @@ meeting:
     to: user/is_present_in_meeting_ids
     restriction_mode: B
   user_ids:
-    type: relation-list
-    to: user/meeting_ids
+    type: number[]
     description: Calculated. All user ids from all users assigned to groups of this meeting.
     read_only: true
     # sql: todo

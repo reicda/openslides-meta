@@ -55,7 +55,7 @@
 #               r = reference, will result in a FIELD
 #               to = to, collection with field get's an automatic sql in a view, if not together with `reference`
 #               R = required
-#             The first tuple symbols the relation from-to, the 2nd FIELD or SQL and primary or not, only valis for lists
+#             The first tuple symbols the relation from-to, the 2nd FIELD or SQL and primary or not, only valid for lists
 #             The original of the following list is used in source code as `decision_list`
 #           ("1Gr", ""): (FieldSqlErrorType.FIELD, False),
 #           ("1GrR", ""): (FieldSqlErrorType.FIELD, False),
@@ -411,7 +411,8 @@ user:
     restriction_mode: A
 
   meeting_ids:
-    type: number[]
+    type: relation-list
+    to: meeting/user_ids
     description: Calculated. All ids from meetings calculated via meeting_user and group_ids as integers.
     read_only: true
     sql: todo
@@ -1841,9 +1842,11 @@ meeting:
     to: user/is_present_in_meeting_ids
     restriction_mode: B
   user_ids:
-    type: number[]
+    type: relation-list
+    to: user/meeting_ids
     description: Calculated. All user ids from all users assigned to groups of this meeting.
     read_only: true
+    sql: todo
     restriction_mode: B
   reference_projector_id:
     type: relation

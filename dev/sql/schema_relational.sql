@@ -55,7 +55,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- MODELS_YML_CHECKSUM = '065e5f43ce5be122f236492eb9432b30'
+-- MODELS_YML_CHECKSUM = 'bbd75cac13c55c82f772ae52df63aa96'
 -- Type definitions
 
 -- Table definitions
@@ -1105,6 +1105,12 @@ CREATE TABLE IF NOT EXISTS gm_organization_tag_tagged_ids_t (
     CONSTRAINT unique_$organization_tag_id_$tagged_id UNIQUE (organization_tag_id, tagged_id)
 );
 
+CREATE TABLE IF NOT EXISTS nm_committee_user_ids_user_t (
+    committee_id integer NOT NULL REFERENCES committee_t (id),
+    user_id integer NOT NULL REFERENCES user_t (id),
+    PRIMARY KEY (committee_id, user_id)
+);
+
 CREATE TABLE IF NOT EXISTS nm_committee_manager_ids_user_t (
     committee_id integer NOT NULL REFERENCES committee_t (id),
     user_id integer NOT NULL REFERENCES user_t (id),
@@ -1118,6 +1124,12 @@ CREATE TABLE IF NOT EXISTS nm_committee_forward_to_committee_ids_committee_t (
 );
 
 CREATE TABLE IF NOT EXISTS nm_meeting_present_user_ids_user_t (
+    meeting_id integer NOT NULL REFERENCES meeting_t (id),
+    user_id integer NOT NULL REFERENCES user_t (id),
+    PRIMARY KEY (meeting_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS nm_meeting_user_ids_user_t (
     meeting_id integer NOT NULL REFERENCES meeting_t (id),
     user_id integer NOT NULL REFERENCES user_t (id),
     PRIMARY KEY (meeting_id, user_id)
@@ -1244,14 +1256,7 @@ FROM organization_t o;
 
 CREATE OR REPLACE VIEW user_ AS SELECT *,
 (select array_agg(n.meeting_id) from nm_meeting_present_user_ids_user_t n where n.user_id = u.id) as is_present_in_meeting_ids,
-(select array_agg(committee_id) from
-    select m.committee_id as committee_id from group_to_user gtu
-      join groupT g on g.id = gtu.group_id
-      join meetingT m on m.id = g.meeting_id
-      where gtu.user_id = u.id
-    union
-    select ctu.committee_id as committee_id from committee_manager_to_user ctu where ctu.user_id = u.id
-  ) as committee_ids,
+(select array_agg(n.committee_id) from nm_committee_user_ids_user_t n where n.user_id = u.id) as committee_ids,
 (select array_agg(n.committee_id) from nm_committee_manager_ids_user_t n where n.user_id = u.id) as committee_management_ids,
 (select array_agg(c.id) from committee_t c where c.forwarding_user_id = u.id) as forwarding_committee_ids,
 (select array_agg(m.id) from meeting_user_t m where m.user_id = u.id) as meeting_user_ids,
@@ -1260,9 +1265,11 @@ CREATE OR REPLACE VIEW user_ AS SELECT *,
 (select array_agg(v.id) from vote_t v where v.user_id = u.id) as vote_ids,
 (select array_agg(v.id) from vote_t v where v.delegated_user_id = u.id) as delegated_vote_ids,
 (select array_agg(p.id) from poll_candidate_t p where p.user_id = u.id) as poll_candidate_ids,
-todo
+(select array_agg(n.meeting_id) from nm_meeting_user_ids_user_t n where n.user_id = u.id) as meeting_ids
 FROM user_t u;
 
+comment on column user_.committee_ids is 'Calculated field: Returns committee_ids, where the user is manager or member in a meeting';
+comment on column user_.meeting_ids is 'Calculated. All ids from meetings calculated via meeting_user and group_ids as integers.';
 
 CREATE OR REPLACE VIEW meeting_user AS SELECT *,
 (select array_agg(p.id) from personal_note_t p where p.meeting_user_id = m.id) as personal_note_ids,
@@ -1291,20 +1298,14 @@ FROM theme_t t;
 
 CREATE OR REPLACE VIEW committee AS SELECT *,
 (select array_agg(m.id) from meeting_t m where m.committee_id = c.id) as meeting_ids,
-(select array_agg(user_id) from
-  select gtu.user_id as user_id from meetingT m
-    join groupT g on g.meeting_id = m.id
-    join group_to_user gtu on gtu.group_id = g.id
-    where m.committee_id = c.id
-  union
-  select ctu.user_id as user_id from committee_manager_to_user ctu where ctu.committee_id = c.id
-) as user_ids,
+(select array_agg(n.user_id) from nm_committee_user_ids_user_t n where n.committee_id = c.id) as user_ids,
 (select array_agg(n.user_id) from nm_committee_manager_ids_user_t n where n.committee_id = c.id) as manager_ids,
 (select array_agg(n.forward_to_committee_id) from nm_committee_forward_to_committee_ids_committee_t n where n.receive_forwardings_from_committee_id = c.id) as forward_to_committee_ids,
 (select array_agg(n.receive_forwardings_from_committee_id) from nm_committee_forward_to_committee_ids_committee_t n where n.forward_to_committee_id = c.id) as receive_forwardings_from_committee_ids,
 (select array_agg(g.organization_tag_id) from gm_organization_tag_tagged_ids_t g where g.tagged_id_committee_id = c.id) as organization_tag_ids
 FROM committee_t c;
 
+comment on column committee.user_ids is 'Calculated field: All users which are in a group of a meeting, belonging to the committee or beeing manager of the committee';
 
 CREATE OR REPLACE VIEW meeting AS SELECT *,
 (select array_agg(g.id) from group_t g where g.used_as_motion_poll_default_id = m.id) as motion_poll_default_group_ids,
@@ -1352,7 +1353,7 @@ CREATE OR REPLACE VIEW meeting AS SELECT *,
 (select c.id from committee_t c where c.default_meeting_id = m.id) as default_meeting_for_committee_id,
 (select array_agg(g.organization_tag_id) from gm_organization_tag_tagged_ids_t g where g.tagged_id_meeting_id = m.id) as organization_tag_ids,
 (select array_agg(n.user_id) from nm_meeting_present_user_ids_user_t n where n.meeting_id = m.id) as present_user_ids,
-todo,
+(select array_agg(n.user_id) from nm_meeting_user_ids_user_t n where n.meeting_id = m.id) as user_ids,
 (select array_agg(p.id) from projection_t p where p.content_object_id_meeting_id = m.id) as projection_ids,
 (select array_agg(p.id) from projector_t p where p.used_as_default_projector_for_agenda_item_list_in_meeting_id = m.id) as default_projector_agenda_item_list_ids,
 (select array_agg(p.id) from projector_t p where p.used_as_default_projector_for_topic_in_meeting_id = m.id) as default_projector_topic_ids,
@@ -1370,6 +1371,7 @@ todo,
 (select array_agg(p.id) from projector_t p where p.used_as_default_projector_for_poll_in_meeting_id = m.id) as default_projector_poll_ids
 FROM meeting_t m;
 
+comment on column meeting.user_ids is 'Calculated. All user ids from all users assigned to groups of this meeting.';
 
 CREATE OR REPLACE VIEW structure_level AS SELECT *,
 (select array_agg(n.meeting_user_id) from nm_meeting_user_structure_level_ids_structure_level_t n where n.structure_level_id = s.id) as meeting_user_ids,
@@ -1932,7 +1934,7 @@ SQL nt:1GrR => organization/mediafile_ids:-> mediafile/owner_id
 SQL nr: => organization/user_ids:-> user/
 
 SQL nt:nt => user/is_present_in_meeting_ids:-> meeting/present_user_ids
-SQL nts:nts => user/committee_ids:-> committee/user_ids
+SQL nt:nt => user/committee_ids:-> committee/user_ids
 SQL nt:nt => user/committee_management_ids:-> committee/manager_ids
 SQL nt:1r => user/forwarding_committee_ids:-> committee/forwarding_user_id
 SQL nt:1rR => user/meeting_user_ids:-> meeting_user/user_id
@@ -1941,7 +1943,7 @@ SQL nt:1Gr => user/option_ids:-> option/content_object_id
 SQL nt:1r => user/vote_ids:-> vote/user_id
 SQL nt:1r => user/delegated_vote_ids:-> vote/delegated_user_id
 SQL nt:1r => user/poll_candidate_ids:-> poll_candidate/user_id
-SQL nts:nts => user/meeting_ids:-> meeting/user_ids
+SQL nt:nt => user/meeting_ids:-> meeting/user_ids
 
 FIELD 1rR: => meeting_user/user_id:-> user/
 FIELD 1rR: => meeting_user/meeting_id:-> meeting/
@@ -1964,7 +1966,7 @@ SQL 1t:1rR => theme/theme_for_organization_id:-> organization/theme_id
 
 SQL nt:1rR => committee/meeting_ids:-> meeting/committee_id
 FIELD 1r: => committee/default_meeting_id:-> meeting/
-SQL nts:nts => committee/user_ids:-> user/committee_ids
+SQL nt:nt => committee/user_ids:-> user/committee_ids
 SQL nt:nt => committee/manager_ids:-> user/committee_management_ids
 SQL nt:nt => committee/forward_to_committee_ids:-> committee/receive_forwardings_from_committee_ids
 SQL nt:nt => committee/receive_forwardings_from_committee_ids:-> committee/forward_to_committee_ids
@@ -2039,7 +2041,7 @@ FIELD 1rR: => meeting/committee_id:-> committee/
 SQL 1t:1r => meeting/default_meeting_for_committee_id:-> committee/default_meeting_id
 SQL nt:nGt => meeting/organization_tag_ids:-> organization_tag/tagged_ids
 SQL nt:nt => meeting/present_user_ids:-> user/is_present_in_meeting_ids
-SQL nts:nts => meeting/user_ids:-> user/meeting_ids
+SQL nt:nt => meeting/user_ids:-> user/meeting_ids
 FIELD 1rR: => meeting/reference_projector_id:-> projector/
 FIELD 1r: => meeting/list_of_speakers_countdown_id:-> projector_countdown/
 FIELD 1r: => meeting/poll_countdown_id:-> projector_countdown/
@@ -2327,4 +2329,4 @@ There are 3 errors/warnings
     projection/content: type:JSON is marked as a calculated field and not generated in schema
 */
 
-/*   Missing attribute handling for constant, on_delete, sql, equal_fields, unique, deferred */
+/*   Missing attribute handling for constant, on_delete, equal_fields, unique, deferred */

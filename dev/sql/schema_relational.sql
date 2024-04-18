@@ -55,7 +55,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- MODELS_YML_CHECKSUM = '959d3a581a8015a294d769587ebb1b6e'
+-- MODELS_YML_CHECKSUM = '2007f6054e0baa149f98b80cbe9ed670'
 -- Type definitions
 
 -- Table definitions
@@ -612,7 +612,6 @@ CREATE TABLE IF NOT EXISTS motion_t (
     sort_parent_id integer,
     origin_id integer,
     origin_meeting_id integer,
-    identical_motion_ids integer[],
     state_id integer NOT NULL,
     recommendation_id integer,
     category_id integer,
@@ -625,7 +624,6 @@ CREATE TABLE IF NOT EXISTS motion_t (
 
 comment on column motion_t.number_value is 'The number value of this motion. This number is auto-generated and read-only.';
 comment on column motion_t.sequential_number is 'The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.';
-comment on column motion_t.identical_motion_ids is 'with psycopg 3.2.0 we could use the as_string method without cursor and change dummy to number. Changed from relation-list to number[], because it still can''t be generated.';
 
 
 CREATE TABLE IF NOT EXISTS motion_submitter_t (
@@ -1186,6 +1184,12 @@ CREATE TABLE IF NOT EXISTS nm_motion_all_derived_motion_ids_motion_t (
     PRIMARY KEY (all_derived_motion_id, all_origin_id)
 );
 
+CREATE TABLE IF NOT EXISTS nm_motion_identical_motion_ids_motion_t (
+    identical_motion_id_1 integer NOT NULL REFERENCES motion_t (id),
+    identical_motion_id_2 integer NOT NULL REFERENCES motion_t (id),
+    PRIMARY KEY (identical_motion_id_1, identical_motion_id_2)
+);
+
 CREATE TABLE IF NOT EXISTS gm_motion_state_extension_reference_ids_t (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     motion_id integer NOT NULL REFERENCES motion_t(id),
@@ -1432,6 +1436,7 @@ CREATE OR REPLACE VIEW motion AS SELECT *,
 (select array_agg(m1.id) from motion_t m1 where m1.origin_id = m.id) as derived_motion_ids,
 (select array_agg(n.all_origin_id) from nm_motion_all_derived_motion_ids_motion_t n where n.all_derived_motion_id = m.id) as all_origin_ids,
 (select array_agg(n.all_derived_motion_id) from nm_motion_all_derived_motion_ids_motion_t n where n.all_origin_id = m.id) as all_derived_motion_ids,
+(select array_cat((select array_agg(n.identical_motion_id_1) from nm_motion_identical_motion_ids_motion_t n where n.identical_motion_id_2 = m.id), (select array_agg(n.identical_motion_id_2) from nm_motion_identical_motion_ids_motion_t n where n.identical_motion_id_1 = m.id))) as identical_motion_ids,
 (select array_agg(g.id) from gm_motion_state_extension_reference_ids_t g where g.motion_id = m.id) as state_extension_reference_ids,
 (select array_agg(g.motion_id) from gm_motion_state_extension_reference_ids_t g where g.state_extension_reference_id_motion_id = m.id) as referenced_in_motion_state_extension_ids,
 (select array_agg(g.id) from gm_motion_recommendation_extension_reference_ids_t g where g.motion_id = m.id) as recommendation_extension_reference_ids,
@@ -2125,6 +2130,7 @@ FIELD 1r: => motion/origin_meeting_id:-> meeting/
 SQL nt:1r => motion/derived_motion_ids:-> motion/origin_id
 SQL nt:nt => motion/all_origin_ids:-> motion/all_derived_motion_ids
 SQL nt:nt => motion/all_derived_motion_ids:-> motion/all_origin_ids
+SQL nt:nt => motion/identical_motion_ids:-> motion/identical_motion_ids
 FIELD 1rR: => motion/state_id:-> motion_state/
 FIELD 1r: => motion/recommendation_id:-> motion_state/
 SQL nGt:nt => motion/state_extension_reference_ids:-> motion/referenced_in_motion_state_extension_ids

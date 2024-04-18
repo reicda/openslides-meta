@@ -1,6 +1,6 @@
 from typing import Any
 
-from src.python_sql import Column, Table
+from .python_sql import Column, Table
 
 
 class DbUtils:

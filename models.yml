@@ -362,7 +362,7 @@ user:
     restriction_mode: E
     read_only: true
     description: "Calculated field: Returns committee_ids, where the user is manager or member in a meeting"
-    sqlTODO: >-
+    sql: >-  # TODO
       (select array_agg(committee_id) from
           select m.committee_id as committee_id from group_to_user gtu
             join groupT g on g.id = gtu.group_id
@@ -747,7 +747,7 @@ committee:
     restriction_mode: A
     read_only: true
     description: "Calculated field: All users which are in a group of a meeting, belonging to the committee or beeing manager of the committee"
-    sqlTODO: >-
+    sql: >-  # TODO
       (select array_agg(user_id) from
         select gtu.user_id as user_id from meetingT m
           join groupT g on g.meeting_id = m.id
@@ -1767,12 +1767,12 @@ meeting:
     restriction_mode: B
   logo_pdf_footer_l_id:
     type: relation
-    to: mediafile/used_as_logo_pdf_header_l_in_meeting_id
+    to: mediafile/used_as_logo_pdf_footer_l_in_meeting_id
     reference: mediafile
     restriction_mode: B
   logo_pdf_footer_r_id:
     type: relation
-    to: mediafile/used_as_logo_pdf_header_l_in_meeting_id
+    to: mediafile/used_as_logo_pdf_footer_r_in_meeting_id
     reference: mediafile
     restriction_mode: B
   logo_pdf_ballot_paper_id:
@@ -1881,7 +1881,7 @@ meeting:
     to: projector/used_as_default_projector_for_list_of_speakers_in_meeting_id
     restriction_mode: B
     required: true
-  default_projector_current_list_of_speakers_ids:
+  default_projector_current_los_ids:
     type: relation-list
     to: projector/used_as_default_projector_for_current_los_in_meeting_id
     restriction_mode: B

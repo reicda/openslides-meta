@@ -1,9 +1,11 @@
+from typing import Any
+
 import psycopg
 import pytest
 from psycopg import sql
 
-from sql import Table
 from src.db_utils import DbUtils
+from src.python_sql import Table
 from tests.base import BaseTestCase
 
 agenda_item_t = Table("agenda_item_t")
@@ -160,7 +162,7 @@ class Relations(BaseTestCase):
                         )
                     ).fetchone()["id"]
                 )
-            los_row = curs.execute(
+            los_row: dict[str, Any] = curs.execute(
                 *list_of_speakers_t.select(
                     list_of_speakers_t.id,
                     list_of_speakers_t.content_object_id,
@@ -789,7 +791,7 @@ class Relations(BaseTestCase):
                         "sequential_number",
                     ],
                 )
-                projector = curs.execute(
+                projector: dict[str, Any] = curs.execute(
                     *projector_t.select(
                         *columns,
                         where=projector_t.used_as_default_projector_for_topic_in_meeting_id
@@ -879,7 +881,7 @@ class EnumTests(BaseTestCase):
         group_t = Table("group_t")
         with self.db_connection.cursor() as curs:
             with self.db_connection.transaction():
-                group = curs.execute(
+                group: dict[str, Any] = curs.execute(
                     *group_t.select(group_t.permissions, where=group_t.id == 1)
                 ).fetchone()
                 assert "agenda_item.can_see_internal" in group["permissions"]

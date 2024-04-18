@@ -6,8 +6,8 @@ import psycopg
 from psycopg import sql
 from psycopg.types.json import Jsonb
 
-from sql import Table
 from src.db_utils import DbUtils
+from src.python_sql import Table
 
 # ADMIN_USERNAME = "admin"
 # ADMIN_PASSWORD = "admin"
@@ -16,7 +16,7 @@ from src.db_utils import DbUtils
 class BaseTestCase(TestCase):
     temporary_template_db = "openslides_template"
     work_on_test_db = "openslides_test"
-    db_connection: psycopg.Connection = None
+    db_connection: psycopg.Connection
 
     # id's of pre loaded rows, see method populate_database
     meeting1_id = 0
@@ -49,7 +49,7 @@ class BaseTestCase(TestCase):
             raise Exception(f"Cannot connect to postgres: {e.message}")
 
     @classmethod
-    def setup_class(cls):
+    def setup_class(cls) -> None:
         env = os.environ
         cls.set_db_connection("postgres", True)
         with cls.db_connection:
@@ -76,7 +76,7 @@ class BaseTestCase(TestCase):
             cls.populate_database()
 
     @classmethod
-    def teardown_class(cls):
+    def teardown_class(cls) -> None:
         """remove last test db and drop the temporary template db"""
         cls.set_db_connection("postgres", True)
         with cls.db_connection:

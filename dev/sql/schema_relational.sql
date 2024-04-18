@@ -55,7 +55,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- MODELS_YML_CHECKSUM = '959d3a581a8015a294d769587ebb1b6e'
+-- MODELS_YML_CHECKSUM = '385e6beb7945826015352886f2d0f97b'
 -- Type definitions
 
 -- Table definitions

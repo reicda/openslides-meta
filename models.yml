@@ -983,6 +983,10 @@ meeting:
     type: boolean
     default: False
     restriction_mode: B
+  agenda_show_topic_navigation_on_detail_view:
+    type: boolean
+    default: False
+    restriction_mode: B
 
   # List of speakers
   list_of_speakers_amount_last_on_projector:

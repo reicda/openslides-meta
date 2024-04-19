@@ -55,7 +55,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- MODELS_YML_CHECKSUM = 'bbd75cac13c55c82f772ae52df63aa96'
+-- MODELS_YML_CHECKSUM = '82f9031bf779d97f165fdce1ceb5cf71'
 -- Type definitions
 
 -- Table definitions
@@ -128,6 +128,7 @@ CREATE TABLE IF NOT EXISTS user_t (
     is_demo_user boolean,
     last_login timestamptz,
     organization_management_level varchar(256) CONSTRAINT enum_user_organization_management_level CHECK (organization_management_level IN ('superadmin', 'can_manage_organization', 'can_manage_users')),
+    meeting_ids integer[],
     organization_id integer GENERATED ALWAYS AS (1) STORED NOT NULL
 );
 
@@ -135,6 +136,7 @@ CREATE TABLE IF NOT EXISTS user_t (
 
 comment on column user_t.saml_id is 'unique-key from IdP for SAML login';
 comment on column user_t.organization_management_level is 'Hierarchical permission level for the whole organization.';
+comment on column user_t.meeting_ids is 'Calculated. All ids from meetings calculated via meeting_user and group_ids as integers.';
 
 
 CREATE TABLE IF NOT EXISTS meeting_user_t (
@@ -403,6 +405,7 @@ This email was generated automatically.',
     font_projector_h1_id integer,
     font_projector_h2_id integer,
     committee_id integer NOT NULL,
+    user_ids integer[],
     reference_projector_id integer NOT NULL,
     list_of_speakers_countdown_id integer,
     poll_countdown_id integer,
@@ -417,6 +420,7 @@ comment on column meeting_t.is_active_in_organization_id is 'Backrelation and bo
 comment on column meeting_t.is_archived_in_organization_id is 'Backrelation and boolean flag at once';
 comment on column meeting_t.list_of_speakers_default_structure_level_time is '0 disables structure level countdowns.';
 comment on column meeting_t.list_of_speakers_intervention_time is '0 disables intervention speakers.';
+comment on column meeting_t.user_ids is 'Calculated. All user ids from all users assigned to groups of this meeting.';
 
 
 CREATE TABLE IF NOT EXISTS structure_level_t (
@@ -608,7 +612,6 @@ CREATE TABLE IF NOT EXISTS motion_t (
     sort_parent_id integer,
     origin_id integer,
     origin_meeting_id integer,
-    identical_motion_ids integer[],
     state_id integer NOT NULL,
     recommendation_id integer,
     category_id integer,
@@ -621,7 +624,6 @@ CREATE TABLE IF NOT EXISTS motion_t (
 
 comment on column motion_t.number_value is 'The number value of this motion. This number is auto-generated and read-only.';
 comment on column motion_t.sequential_number is 'The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.';
-comment on column motion_t.identical_motion_ids is 'with psycopg 3.2.0 we could use the as_string method without cursor and change dummy to number. Changed from relation-list to number[], because it still can''t be generated.';
 
 
 CREATE TABLE IF NOT EXISTS motion_submitter_t (
@@ -1129,12 +1131,6 @@ CREATE TABLE IF NOT EXISTS nm_meeting_present_user_ids_user_t (
     PRIMARY KEY (meeting_id, user_id)
 );
 
-CREATE TABLE IF NOT EXISTS nm_meeting_user_ids_user_t (
-    meeting_id integer NOT NULL REFERENCES meeting_t (id),
-    user_id integer NOT NULL REFERENCES user_t (id),
-    PRIMARY KEY (meeting_id, user_id)
-);
-
 CREATE TABLE IF NOT EXISTS nm_group_meeting_user_ids_meeting_user_t (
     group_id integer NOT NULL REFERENCES group_t (id),
     meeting_user_id integer NOT NULL REFERENCES meeting_user_t (id),
@@ -1186,6 +1182,12 @@ CREATE TABLE IF NOT EXISTS nm_motion_all_derived_motion_ids_motion_t (
     all_derived_motion_id integer NOT NULL REFERENCES motion_t (id),
     all_origin_id integer NOT NULL REFERENCES motion_t (id),
     PRIMARY KEY (all_derived_motion_id, all_origin_id)
+);
+
+CREATE TABLE IF NOT EXISTS nm_motion_identical_motion_ids_motion_t (
+    identical_motion_id_1 integer NOT NULL REFERENCES motion_t (id),
+    identical_motion_id_2 integer NOT NULL REFERENCES motion_t (id),
+    PRIMARY KEY (identical_motion_id_1, identical_motion_id_2)
 );
 
 CREATE TABLE IF NOT EXISTS gm_motion_state_extension_reference_ids_t (
@@ -1264,12 +1266,10 @@ CREATE OR REPLACE VIEW user_ AS SELECT *,
 (select array_agg(o.id) from option_t o where o.content_object_id_user_id = u.id) as option_ids,
 (select array_agg(v.id) from vote_t v where v.user_id = u.id) as vote_ids,
 (select array_agg(v.id) from vote_t v where v.delegated_user_id = u.id) as delegated_vote_ids,
-(select array_agg(p.id) from poll_candidate_t p where p.user_id = u.id) as poll_candidate_ids,
-(select array_agg(n.meeting_id) from nm_meeting_user_ids_user_t n where n.user_id = u.id) as meeting_ids
+(select array_agg(p.id) from poll_candidate_t p where p.user_id = u.id) as poll_candidate_ids
 FROM user_t u;
 
 comment on column user_.committee_ids is 'Calculated field: Returns committee_ids, where the user is manager or member in a meeting';
-comment on column user_.meeting_ids is 'Calculated. All ids from meetings calculated via meeting_user and group_ids as integers.';
 
 CREATE OR REPLACE VIEW meeting_user AS SELECT *,
 (select array_agg(p.id) from personal_note_t p where p.meeting_user_id = m.id) as personal_note_ids,
@@ -1353,7 +1353,6 @@ CREATE OR REPLACE VIEW meeting AS SELECT *,
 (select c.id from committee_t c where c.default_meeting_id = m.id) as default_meeting_for_committee_id,
 (select array_agg(g.organization_tag_id) from gm_organization_tag_tagged_ids_t g where g.tagged_id_meeting_id = m.id) as organization_tag_ids,
 (select array_agg(n.user_id) from nm_meeting_present_user_ids_user_t n where n.meeting_id = m.id) as present_user_ids,
-(select array_agg(n.user_id) from nm_meeting_user_ids_user_t n where n.meeting_id = m.id) as user_ids,
 (select array_agg(p.id) from projection_t p where p.content_object_id_meeting_id = m.id) as projection_ids,
 (select array_agg(p.id) from projector_t p where p.used_as_default_projector_for_agenda_item_list_in_meeting_id = m.id) as default_projector_agenda_item_list_ids,
 (select array_agg(p.id) from projector_t p where p.used_as_default_projector_for_topic_in_meeting_id = m.id) as default_projector_topic_ids,
@@ -1371,7 +1370,6 @@ CREATE OR REPLACE VIEW meeting AS SELECT *,
 (select array_agg(p.id) from projector_t p where p.used_as_default_projector_for_poll_in_meeting_id = m.id) as default_projector_poll_ids
 FROM meeting_t m;
 
-comment on column meeting.user_ids is 'Calculated. All user ids from all users assigned to groups of this meeting.';
 
 CREATE OR REPLACE VIEW structure_level AS SELECT *,
 (select array_agg(n.meeting_user_id) from nm_meeting_user_structure_level_ids_structure_level_t n where n.structure_level_id = s.id) as meeting_user_ids,
@@ -1438,6 +1436,7 @@ CREATE OR REPLACE VIEW motion AS SELECT *,
 (select array_agg(m1.id) from motion_t m1 where m1.origin_id = m.id) as derived_motion_ids,
 (select array_agg(n.all_origin_id) from nm_motion_all_derived_motion_ids_motion_t n where n.all_derived_motion_id = m.id) as all_origin_ids,
 (select array_agg(n.all_derived_motion_id) from nm_motion_all_derived_motion_ids_motion_t n where n.all_origin_id = m.id) as all_derived_motion_ids,
+(select array_cat((select array_agg(n.identical_motion_id_1) from nm_motion_identical_motion_ids_motion_t n where n.identical_motion_id_2 = m.id), (select array_agg(n.identical_motion_id_2) from nm_motion_identical_motion_ids_motion_t n where n.identical_motion_id_1 = m.id))) as identical_motion_ids,
 (select array_agg(g.id) from gm_motion_state_extension_reference_ids_t g where g.motion_id = m.id) as state_extension_reference_ids,
 (select array_agg(g.motion_id) from gm_motion_state_extension_reference_ids_t g where g.state_extension_reference_id_motion_id = m.id) as referenced_in_motion_state_extension_ids,
 (select array_agg(g.id) from gm_motion_recommendation_extension_reference_ids_t g where g.motion_id = m.id) as recommendation_extension_reference_ids,
@@ -1943,7 +1942,6 @@ SQL nt:1Gr => user/option_ids:-> option/content_object_id
 SQL nt:1r => user/vote_ids:-> vote/user_id
 SQL nt:1r => user/delegated_vote_ids:-> vote/delegated_user_id
 SQL nt:1r => user/poll_candidate_ids:-> poll_candidate/user_id
-SQL nt:nt => user/meeting_ids:-> meeting/user_ids
 
 FIELD 1rR: => meeting_user/user_id:-> user/
 FIELD 1rR: => meeting_user/meeting_id:-> meeting/
@@ -2041,7 +2039,6 @@ FIELD 1rR: => meeting/committee_id:-> committee/
 SQL 1t:1r => meeting/default_meeting_for_committee_id:-> committee/default_meeting_id
 SQL nt:nGt => meeting/organization_tag_ids:-> organization_tag/tagged_ids
 SQL nt:nt => meeting/present_user_ids:-> user/is_present_in_meeting_ids
-SQL nt:nt => meeting/user_ids:-> user/meeting_ids
 FIELD 1rR: => meeting/reference_projector_id:-> projector/
 FIELD 1r: => meeting/list_of_speakers_countdown_id:-> projector_countdown/
 FIELD 1r: => meeting/poll_countdown_id:-> projector_countdown/
@@ -2133,6 +2130,7 @@ FIELD 1r: => motion/origin_meeting_id:-> meeting/
 SQL nt:1r => motion/derived_motion_ids:-> motion/origin_id
 SQL nt:nt => motion/all_origin_ids:-> motion/all_derived_motion_ids
 SQL nt:nt => motion/all_derived_motion_ids:-> motion/all_origin_ids
+SQL nt:nt => motion/identical_motion_ids:-> motion/identical_motion_ids
 FIELD 1rR: => motion/state_id:-> motion_state/
 FIELD 1r: => motion/recommendation_id:-> motion_state/
 SQL nGt:nt => motion/state_extension_reference_ids:-> motion/referenced_in_motion_state_extension_ids

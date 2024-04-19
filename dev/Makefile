@@ -1,4 +1,5 @@
 # Commands inside the container
+paths = src/ tests/
 
 all: pyupgrade black autoflake isort flake8 mypy
 
@@ -9,22 +10,22 @@ check-pyupgrade:
 	pyupgrade --py310-plus $$(find . -name '*.py')
 
 black:
-	black src/
+	black $(paths)
 
 check-black:
-	black --check --diff src/
+	black --check --diff $(paths)
 
 autoflake:
-	autoflake src/
+	autoflake $(paths)
 
 isort:
-	isort src/
+	isort $(paths)
 
 check-isort:
-	isort --check-only --diff src/
+	isort --check-only --diff $(paths)
 
 flake8:
-	flake8 src/
+	flake8 $(paths)
 
 mypy:
 	mypy src/

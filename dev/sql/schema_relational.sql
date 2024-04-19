@@ -55,7 +55,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- MODELS_YML_CHECKSUM = '82f9031bf779d97f165fdce1ceb5cf71'
+-- MODELS_YML_CHECKSUM = '0a7ce920e0e10eedd3b09c4ce81fc3f8'
 -- Type definitions
 
 -- Table definitions
@@ -288,6 +288,7 @@ CREATE TABLE IF NOT EXISTS meeting_t (
     agenda_item_creation varchar(256) CONSTRAINT enum_meeting_agenda_item_creation CHECK (agenda_item_creation IN ('always', 'never', 'default_yes', 'default_no')) DEFAULT 'default_no',
     agenda_new_items_default_visibility varchar(256) CONSTRAINT enum_meeting_agenda_new_items_default_visibility CHECK (agenda_new_items_default_visibility IN ('common', 'internal', 'hidden')) DEFAULT 'internal',
     agenda_show_internal_items_on_projector boolean DEFAULT False,
+    agenda_show_topic_navigation_on_detail_view boolean DEFAULT False,
     list_of_speakers_amount_last_on_projector integer CONSTRAINT minimum_list_of_speakers_amount_last_on_projector CHECK (list_of_speakers_amount_last_on_projector >= -1) DEFAULT 0,
     list_of_speakers_amount_next_on_projector integer CONSTRAINT minimum_list_of_speakers_amount_next_on_projector CHECK (list_of_speakers_amount_next_on_projector >= -1) DEFAULT -1,
     list_of_speakers_couple_countdown boolean DEFAULT True,
@@ -369,6 +370,9 @@ Password: {password}
 
 This email was generated automatically.',
     users_enable_vote_delegations boolean,
+    users_forbid_delegator_in_list_of_speakers boolean,
+    users_forbid_delegator_as_submitter boolean,
+    users_forbid_delegator_as_supporter boolean,
     assignments_export_title varchar(256) DEFAULT 'Elections',
     assignments_export_preamble text,
     assignment_poll_ballot_paper_selection varchar(256) CONSTRAINT enum_meeting_assignment_poll_ballot_paper_selection CHECK (assignment_poll_ballot_paper_selection IN ('NUMBER_OF_DELEGATES', 'NUMBER_OF_ALL_PARTICIPANTS', 'CUSTOM_NUMBER')) DEFAULT 'CUSTOM_NUMBER',

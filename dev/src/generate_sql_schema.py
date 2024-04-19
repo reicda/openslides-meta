@@ -9,7 +9,7 @@ from string import Formatter
 from textwrap import dedent
 from typing import Any, TypedDict, cast
 
-from helper_get_names import (
+from .helper_get_names import (
     KEYSEPARATOR,
     HelperGetNames,
     InternalHelper,
@@ -1074,7 +1074,6 @@ class Helper:
             ("1t", "1rR"): (FieldSqlErrorType.SQL, False),
             ("1tR", "1Gr"): (FieldSqlErrorType.SQL, False),
             ("1tR", "1GrR"): (FieldSqlErrorType.SQL, False),
-            ("1rR", "1t"): (FieldSqlErrorType.FIELD, False),
             ("nGt", "nt"): (FieldSqlErrorType.SQL, True),
             ("nr", ""): (FieldSqlErrorType.SQL, True),
             ("nt", "1Gr"): (FieldSqlErrorType.SQL, False),

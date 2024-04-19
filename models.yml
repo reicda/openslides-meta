@@ -55,7 +55,7 @@
 #               r = reference, will result in a FIELD
 #               to = to, collection with field get's an automatic sql in a view, if not together with `reference`
 #               R = required
-#             The first tuple symbols the relation from-to, the 2nd FIELD or SQL and primary or not, only valis for lists
+#             The first tuple symbols the relation from-to, the 2nd FIELD or SQL and primary or not, only valid for lists
 #             The original of the following list is used in source code as `decision_list`
 #           ("1Gr", ""): (FieldSqlErrorType.FIELD, False),
 #           ("1GrR", ""): (FieldSqlErrorType.FIELD, False),
@@ -300,7 +300,7 @@ user:
     restriction_mode: A
   is_active:
     type: boolean
-    restriction_mode: D
+    restriction_mode: B
   is_physical_person:
     type: boolean
     default: true
@@ -361,15 +361,15 @@ user:
     restriction_mode: E
     read_only: true
     description: "Calculated field: Returns committee_ids, where the user is manager or member in a meeting"
-    sqlTODO: >-
-      (select array_agg(committee_id) from
-          select m.committee_id as committee_id from group_to_user gtu
-            join groupT g on g.id = gtu.group_id
-            join meetingT m on m.id = g.meeting_id
-            where gtu.user_id = u.id
-          union
-          select ctu.committee_id as committee_id from committee_manager_to_user ctu where ctu.user_id = u.id
-        ) as committee_ids
+    # sql: >-  # TODO
+    #   (select array_agg(committee_id) from
+    #       select m.committee_id as committee_id from group_to_user gtu
+    #         join groupT g on g.id = gtu.group_id
+    #         join meetingT m on m.id = g.meeting_id
+    #         where gtu.user_id = u.id
+    #       union
+    #       select ctu.committee_id as committee_id from committee_manager_to_user ctu where ctu.user_id = u.id
+    #     ) as committee_ids
 
   # committee specific permissions
   committee_management_ids:
@@ -413,7 +413,7 @@ user:
     type: number[]
     description: Calculated. All ids from meetings calculated via meeting_user and group_ids as integers.
     read_only: true
-    sql: todo
+    # sql: todo
     restriction_mode: E
   organization_id:
     type: relation
@@ -746,15 +746,15 @@ committee:
     restriction_mode: A
     read_only: true
     description: "Calculated field: All users which are in a group of a meeting, belonging to the committee or beeing manager of the committee"
-    sqlTODO: >-
-      (select array_agg(user_id) from
-        select gtu.user_id as user_id from meetingT m
-          join groupT g on g.meeting_id = m.id
-          join group_to_user gtu on gtu.group_id = g.id
-          where m.committee_id = c.id
-        union
-        select ctu.user_id as user_id from committee_manager_to_user ctu where ctu.committee_id = c.id
-      ) as user_ids
+    # sql: >-  # TODO
+    #   (select array_agg(user_id) from
+    #     select gtu.user_id as user_id from meetingT m
+    #       join groupT g on g.meeting_id = m.id
+    #       join group_to_user gtu on gtu.group_id = g.id
+    #       where m.committee_id = c.id
+    #     union
+    #     select ctu.user_id as user_id from committee_manager_to_user ctu where ctu.committee_id = c.id
+    #   ) as user_ids
   manager_ids:
     type: relation-list
     to: user/committee_management_ids
@@ -1059,6 +1059,10 @@ meeting:
     default: internal
     restriction_mode: B
   agenda_show_internal_items_on_projector:
+    type: boolean
+    default: False
+    restriction_mode: B
+  agenda_show_topic_navigation_on_detail_view:
     type: boolean
     default: False
     restriction_mode: B
@@ -1435,6 +1439,15 @@ meeting:
   users_enable_vote_delegations:
     type: boolean
     restriction_mode: B
+  users_forbid_delegator_in_list_of_speakers:
+    type: boolean
+    restriction_mode: B
+  users_forbid_delegator_as_submitter:
+    type: boolean
+    restriction_mode: B
+  users_forbid_delegator_as_supporter:
+    type: boolean
+    restriction_mode: B
 
   # Assignments
   assignments_export_title:
@@ -1766,12 +1779,12 @@ meeting:
     restriction_mode: B
   logo_pdf_footer_l_id:
     type: relation
-    to: mediafile/used_as_logo_pdf_header_l_in_meeting_id
+    to: mediafile/used_as_logo_pdf_footer_l_in_meeting_id
     reference: mediafile
     restriction_mode: B
   logo_pdf_footer_r_id:
     type: relation
-    to: mediafile/used_as_logo_pdf_header_l_in_meeting_id
+    to: mediafile/used_as_logo_pdf_footer_r_in_meeting_id
     reference: mediafile
     restriction_mode: B
   logo_pdf_ballot_paper_id:
@@ -1843,6 +1856,7 @@ meeting:
     type: number[]
     description: Calculated. All user ids from all users assigned to groups of this meeting.
     read_only: true
+    # sql: todo
     restriction_mode: B
   reference_projector_id:
     type: relation
@@ -1880,7 +1894,7 @@ meeting:
     to: projector/used_as_default_projector_for_list_of_speakers_in_meeting_id
     restriction_mode: B
     required: true
-  default_projector_current_list_of_speakers_ids:
+  default_projector_current_los_ids:
     type: relation-list
     to: projector/used_as_default_projector_for_current_los_in_meeting_id
     restriction_mode: B
@@ -2689,10 +2703,8 @@ motion:
     to: motion/all_origin_ids
     restriction_mode: A
   identical_motion_ids:
-    type: number[]
-    # type: relation-list
-    # to: motion/identical_motion_ids
-    description: with psycopg 3.2.0 we could use the as_string method without cursor and change dummy to number. Changed from relation-list to number[], because it still can''t be generated.
+    type: relation-list
+    to: motion/identical_motion_ids
     restriction_mode: C
   state_id:
     type: relation

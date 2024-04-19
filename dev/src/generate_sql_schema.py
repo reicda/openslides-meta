@@ -422,6 +422,7 @@ class GenerateCodeBlocks:
                     foreign_table_name,
                     foreign_table_column,
                     foreign_table_ref_column,
+                    own_table_field.field_def == foreign_table_field.field_def,
                 )
                 if comment := fdata.get("description"):
                     text["post_view"] = Helper.get_post_view_comment(
@@ -448,15 +449,25 @@ class GenerateCodeBlocks:
         foreign_table_name: str,
         foreign_table_column: str,
         foreign_table_ref_column: str,
+        self_reference: bool = False,
     ) -> str:
         table_letter = Helper.get_table_letter(table_name)
-        letters = [table_letter]
-        foreign_letter = Helper.get_table_letter(foreign_table_name, letters)
+        foreign_letter = Helper.get_table_letter(foreign_table_name, [table_letter])
         foreign_table_name = HelperGetNames.get_table_name(foreign_table_name)
-        if foreign_table_column:
-            return f"(select array_agg({foreign_letter}.{foreign_table_ref_column}) from {foreign_table_name} {foreign_letter} where {foreign_letter}.{foreign_table_column} = {table_letter}.{own_ref_column}) as {fname},\n"
+        AGG_TEMPLATE = f"select array_agg({foreign_letter}.{{}}) from {foreign_table_name} {foreign_letter}"
+        COND_TEMPLATE = (
+            f" where {foreign_letter}.{{}} = {table_letter}.{own_ref_column}"
+        )
+        if not foreign_table_column or not self_reference:
+            query = AGG_TEMPLATE.format(foreign_table_ref_column)
+            if foreign_table_column:
+                query += COND_TEMPLATE.format(foreign_table_column)
         else:
-            return f"(select array_agg({foreign_letter}.{foreign_table_ref_column}) from {foreign_table_name} {foreign_letter}) as {fname},\n"
+            assert foreign_table_ref_column == (col := foreign_table_column)
+            arr1 = AGG_TEMPLATE.format(f"{col}_1") + COND_TEMPLATE.format(f"{col}_2")
+            arr2 = AGG_TEMPLATE.format(f"{col}_2") + COND_TEMPLATE.format(f"{col}_1")
+            query = f"select array_cat(({arr1}), ({arr2}))"
+        return f"({query}) as {fname},\n"
 
     @classmethod
     def get_trigger_check_not_null_for_relation_lists(
@@ -814,6 +825,9 @@ class Helper:
         field2 = HelperGetNames.get_field_in_n_m_relation_list(
             foreign_table_field, own_table_field.table
         )
+        if field1 == field2:
+            field1 += "_1"
+            field2 += "_2"
         text = Helper.INTERMEDIATE_TABLE_N_M_RELATION_TEMPLATE.substitute(
             {
                 "table_name": HelperGetNames.get_table_name(nm_table_name),
@@ -1081,11 +1095,9 @@ class Helper:
             error = f"Type combination not implemented: {own_c}:{foreign_c} on field {own.collectionfield}\n"
             state = FieldSqlErrorType.ERROR
         elif primary == "primary_decide_alphabetical":
-            if own.collectionfield == foreign.collectionfield:
-                error = f"Field {own.collectionfield} identical with foreign.collectionfield. SQL_decice_alphabetical uncedidable!\n"
-                state = FieldSqlErrorType.ERROR
             primary = (
-                foreign.collectionfield == "-"
+                own.collectionfield == foreign.collectionfield
+                or foreign.collectionfield == "-"
                 or own.collectionfield < foreign.collectionfield
             )
         return cast(FieldSqlErrorType, state), cast(bool, primary), error

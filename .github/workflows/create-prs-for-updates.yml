@@ -23,7 +23,7 @@ jobs:
             assignee: ostcar
             setup-action: setup-autoupdate-pr
           - repository: openslides-backend
-            assignee: jsangmeister
+            assignee: r-peschke
           - repository: openslides-client
             assignee: bastianjoel
           - repository: openslides-search-service

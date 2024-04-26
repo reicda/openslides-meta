@@ -1,15 +1,15 @@
 autoflake==2.3.1
-black==24.4.0
+black==24.4.1
 flake8==7.0.0
 isort==5.13.2
-mypy==1.9.0
+mypy==1.10.0
 pytest==8.1.1
 pyupgrade==3.15.2
 pyyaml==6.0.1
 simplejson==3.19.2
 debugpy==1.8.0
 requests==2.31.0
-psycopg[binary]==3.1.18  # only dev, in production use psycopg
+psycopg[binary]==3.1.18
 python-sql==1.4.3
 
 # typing

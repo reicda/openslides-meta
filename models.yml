@@ -317,7 +317,7 @@ user:
       - superadmin
       - can_manage_organization
       - can_manage_users
-    restriction_mode: E
+    restriction_mode: B
   is_present_in_meeting_ids:
     type: relation-list
     to: meeting/present_user_ids

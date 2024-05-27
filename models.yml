@@ -252,6 +252,9 @@ user:
     type: string
     required: true
     restriction_mode: B
+  member_number:
+    type: string
+    restriction_mode: B
   saml_id:
     type: string
     minLength: 1

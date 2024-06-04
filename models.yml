@@ -252,6 +252,9 @@ user:
     type: string
     required: true
     restriction_mode: B
+  member_number:
+    type: string
+    restriction_mode: B
   saml_id:
     type: string
     minLength: 1
@@ -317,7 +320,7 @@ user:
       - superadmin
       - can_manage_organization
       - can_manage_users
-    restriction_mode: E
+    restriction_mode: B
   is_present_in_meeting_ids:
     type: relation-list
     to: meeting/present_user_ids
@@ -1363,6 +1366,9 @@ meeting:
     type: boolean
     restriction_mode: B
   users_forbid_delegator_as_supporter:
+    type: boolean
+    restriction_mode: B
+  users_forbid_delegator_to_vote:
     type: boolean
     restriction_mode: B
 

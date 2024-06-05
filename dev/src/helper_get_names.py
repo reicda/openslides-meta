@@ -2,7 +2,7 @@ import hashlib
 import os
 import re
 from collections.abc import Callable
-from typing import Any, cast
+from typing import Any, cast, TypedDict
 from enum import Enum
 
 import requests
@@ -47,6 +47,11 @@ class TableFieldType:
 
         return TableFieldType(tname, fname, tfield, ref_column)
 
+class ToDict(TypedDict):
+    """Defines the dict keys for the to-Attribute of generic relations in field definitions"""
+
+    collections: list[str]
+    field: str
 
 class FieldSqlErrorType(Enum):
     FIELD = 1
@@ -363,9 +368,20 @@ class InternalHelper:
             ("nts", "nts"): (FieldSqlErrorType.SQL, False),
         }
 
+        foreign_c_replacement_list: list[str] = [
+            "1Gr",
+            "1GrR",
+            "1r",
+            "1rR",
+            "nr",
+        ]
+
         state: FieldSqlErrorType | str | None
         primary: bool | str | None
         error = ""
+
+        if own_c in foreign_c_replacement_list:
+            foreign_c = ""
 
         state, primary = decision_list.get((own_c, foreign_c), (None, None))
         if state is None:
@@ -380,19 +396,163 @@ class InternalHelper:
         return cast(FieldSqlErrorType, state), cast(bool, primary), error
 
     @staticmethod
-    def get_view_field_decision(collection_name: str, field_name: str, field_def: dict[str, any]) -> bool:
-        own : TableFieldType
-        foreign : TableFieldType
-        own_c : str
-        foreign_c : str
+    def check_relation_definitions(
+        own_field: TableFieldType, foreign_fields: list[TableFieldType]
+    ) -> tuple[FieldSqlErrorType, bool, str, str]:
+        """
+        Decides for the own-field,
+          - whether it is a field, a sql-expression or is there an error
+          - relation-list and generic-relation-list are always sql-expressions.
+            True significates, that it is the pimary that creates the intermediate table
+
+        Also checks relational behaviour and produces the informative relation line and in
+        case of an error an error text
+
+        Returns:
+        - field, sql, error => enum FieldSqlErrorType
+        - primary field (only relevant for list fields)
+        - complete relational text with FIELD, SQL or *** in front
+        - error line if error else empty string
+        """
         error = ""
+        own_c, tmp_error = InternalHelper.get_cardinality(own_field)
+        error = error or tmp_error
+        foreigns_c = []
+        foreign_collectionfields = []
+        for foreign_field in foreign_fields:
+            foreign_c, tmp_error = InternalHelper.get_cardinality(foreign_field)
+            foreigns_c.append(foreign_c)
+            error = error or tmp_error
+            foreign_collectionfields.append(foreign_field.collectionfield)
 
-        own = TableFieldType(HelperGetNames.get_table_name(collection_name), field_name, field_def)
-        own_c, error = InternalHelper.get_cardinality(own)
+        if error:
+            state = FieldSqlErrorType.ERROR
+            primary = False
+        else:
+            for i, foreign_field in enumerate(foreign_fields):
+                if i == 0:
+                    state, primary, error = InternalHelper.generate_field_or_sql_decision(
+                        own_field, own_c, foreign_field, foreigns_c[i]
+                    )
+                else:
+                    statex, primaryx, error = InternalHelper.generate_field_or_sql_decision(
+                        own_field, own_c, foreign_field, foreigns_c[i]
+                    )
+                    if not error and (statex != state or primaryx != primary):
+                        error = f"Error in generation for generic collectionfield '{own_field.collectionfield}'"
+                if error:
+                    state = FieldSqlErrorType.ERROR
+                    break
 
-        foreign = TableFieldType.get_definitions_from_foreign(field_def.get("to", None), field_def.get("reference", None))
-        foreign_c, error = InternalHelper.get_cardinality(foreign)
+        state_text = "***" if state == FieldSqlErrorType.ERROR else state.name
+        text = f"{state_text} {own_c}:{','.join(foreigns_c)} => {own_field.collectionfield}:-> {','.join(foreign_collectionfields)}\n"
+        if state == FieldSqlErrorType.ERROR:
+            text += f"    {error}"
+        return state, primary, text, error
 
-        field, primary, error = InternalHelper.generate_field_or_sql_decision(own, own_c, foreign, foreign_c)
+    @staticmethod
+    def get_definitions_from_foreign_list(
+        to: ToDict | list[str] | None,
+        reference: list[str] | None,
+    ) -> list[TableFieldType]:
+        """
+        used for generic_relation with multiple foreign relations
+        """
+        # temporarely allowed
+        # if to and reference:
+        #     raise Exception(
+        #         f"Field {table}/{field}: On generic-relation fields it is not allowed to use 'to' and 'reference' for 1 field"
+        #     )
+        results: list[TableFieldType] = []
+        # precedence for reference
+        if reference:
+            for ref in reference:
+                results.append(TableFieldType.get_definitions_from_foreign(None, ref))
+        elif isinstance(to, dict):
+            fname = "/" + to["field"]
+            for table in to["collections"]:
+                results.append(
+                    TableFieldType.get_definitions_from_foreign(table + fname, None)
+                )
+        elif isinstance(to, list):
+            for collectionfield in to:
+                results.append(
+                    TableFieldType.get_definitions_from_foreign(collectionfield, None)
+                )
+        else:
+            results.append(TableFieldType.get_definitions_from_foreign(to, None))
+        return results
+
+    @staticmethod
+    def get_view_field_state_write_fields(
+        collection_name: str, field_name: str, value: dict[str, any]
+    ) -> (bool, tuple[str, str, str]):
+        """
+        Purpose:
+            Checks whether a field is a view field and if other fields need to be written in an intermediate
+            table.
+        Input:
+        - collection_name
+        - field_name
+        - value : represents the definition of the field ( field_name in collection_name )
+        Returns:
+        - is_view_field : whether the field is a view field or not
+        - write_fields:
+            - None if no fields need to be written
+            - Tuple
+                table_name : name of the intermediate table
+                field1
+                field2
+        """
+        # variable declaration
+        own : TableFieldType
+        field_type : str
+        state: FieldSqlErrorType
+        primary : bool
+        error : str
+        is_view_field : bool
+        foreign : TableFieldType
+        foreign_type : str
+        table_name : str = ""
+        field1 : str = ""
+        field2 : str = ""
+        write_fields: tuple[str,str,str] | None = None
+
+        # create TableFieldType own out of collection_name, field_name, value as field_def
+        own = TableFieldType(collection_name, field_name, value)
+        field_type = own.field_def.get("type", None)
+
+        # get the foreign field list and check the relations
+        foreign_fields = InternalHelper.get_definitions_from_foreign_list(value.get("to", None), value.get("reference", None))
+        state, primary, _, error = InternalHelper.check_relation_definitions(own, foreign_fields)
+        is_view_field = state == FieldSqlErrorType.SQL
+
+        if primary:
+            if field_type == "relation-list":
+                foreign = foreign_fields[0]
+                foreign_type = foreign.field_def.get("type", None)
+
+                if foreign_type == "relation-list":
+                    table_name = HelperGetNames.get_nm_table_name(own, foreign)
+                    field1 = HelperGetNames.get_field_in_n_m_relation_list(
+                        own, foreign.table
+                    )
+                    field2 = HelperGetNames.get_field_in_n_m_relation_list(
+                        foreign, own.table
+                    )
+                    if field1 == field2:
+                        field1 += "_1"
+                        field2 += "_2"
+                    write_fields = (table_name, field1, field2)
+
+
+            elif field_type == "generic-relation-list":
+                table_name = HelperGetNames.get_gm_table_name(own)
+                field1 = f"{own.table}_{own.ref_column}"
+                field2 = own.column[:-1]
+
+                write_fields = (table_name, field1, field2)
         
-        return field == FieldSqlErrorType.SQL
+        assert error == "", error
+
+        return is_view_field, write_fields

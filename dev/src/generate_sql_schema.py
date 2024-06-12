@@ -11,11 +11,10 @@ from typing import Any, TypedDict, cast
 
 from .helper_get_names import (
     KEYSEPARATOR,
+    FieldSqlErrorType,
     HelperGetNames,
     InternalHelper,
-    GenerateHelper,
     TableFieldType,
-    FieldSqlErrorType,
 )
 
 SOURCE = (Path(__file__).parent / ".." / ".." / "models.yml").resolve()
@@ -933,8 +932,6 @@ class Helper:
     def get_post_view_comment(entity_name: str, fname: str, comment: str) -> str:
         return f"comment on column {entity_name}.{fname} is '{comment}';\n"
 
-
-
     @staticmethod
     def get_generic_combined_fields(
         generic_plain_field_name: str, own_column: str, foreign_table: str
@@ -987,6 +984,7 @@ class ModelsHelper:
             return to.split(KEYSEPARATOR)[0]
         else:
             raise Exception("Relation field without reference or to")
+
 
 FIELD_TYPES: dict[str, dict[str, Any]] = {
     "string": {

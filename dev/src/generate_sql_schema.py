@@ -11,6 +11,7 @@ from typing import Any, TypedDict, cast
 
 from .helper_get_names import (
     KEYSEPARATOR,
+    FieldSqlErrorType,
     HelperGetNames,
     InternalHelper,
     TableFieldType,
@@ -35,25 +36,12 @@ class SchemaZoneTexts(TypedDict, total=False):
     errors: list[str]
 
 
-class ToDict(TypedDict):
-    """Defines the dict keys for the to-Attribute of generic relations in field definitions"""
-
-    collections: list[str]
-    field: str
-
-
 class SQL_Delete_Update_Options(str, Enum):
     RESTRICT = "RESTRICT"
     CASCADE = "CASCADE"
     SET_NULL = "SET NULL"
     SET_DEFAULT = "SET DEFAULT"
     NO_ACTION = "NO ACTION"
-
-
-class FieldSqlErrorType(Enum):
-    FIELD = 1
-    SQL = 2
-    ERROR = 3
 
 
 class SubstDict(TypedDict, total=False):
@@ -277,7 +265,7 @@ class GenerateCodeBlocks:
                 fdata.get("to"), fdata.get("reference")
             )
         )
-        state, _, final_info, error = Helper.check_relation_definitions(
+        state, _, final_info, error = InternalHelper.check_relation_definitions(
             own_table_field, [foreign_table_field]
         )
 
@@ -348,7 +336,7 @@ class GenerateCodeBlocks:
                 fdata.get("reference"),
             )
         )
-        state, primary, final_info, error = Helper.check_relation_definitions(
+        state, primary, final_info, error = InternalHelper.check_relation_definitions(
             own_table_field, [foreign_table_field]
         )
 
@@ -493,12 +481,12 @@ class GenerateCodeBlocks:
         text = cast(SchemaZoneTexts, defaultdict(str))
         own_table_field = TableFieldType(table_name, fname, fdata)
         foreign_table_fields: list[TableFieldType] = (
-            ModelsHelper.get_definitions_from_foreign_list(
-                table_name, fname, fdata.get("to"), fdata.get("reference")
+            InternalHelper.get_definitions_from_foreign_list(
+                fdata.get("to"), fdata.get("reference")
             )
         )
 
-        state, _, final_info, error = Helper.check_relation_definitions(
+        state, _, final_info, error = InternalHelper.check_relation_definitions(
             own_table_field, foreign_table_fields
         )
 
@@ -543,11 +531,11 @@ class GenerateCodeBlocks:
         text = cast(SchemaZoneTexts, defaultdict(str))
         own_table_field = TableFieldType(table_name, fname, fdata)
         foreign_table_fields: list[TableFieldType] = (
-            ModelsHelper.get_definitions_from_foreign_list(
-                table_name, fname, fdata.get("to"), fdata.get("reference")
+            InternalHelper.get_definitions_from_foreign_list(
+                fdata.get("to"), fdata.get("reference")
             )
         )
-        state, primary, final_info, error = Helper.check_relation_definitions(
+        state, primary, final_info, error = InternalHelper.check_relation_definitions(
             own_table_field, foreign_table_fields
         )
 
@@ -945,164 +933,6 @@ class Helper:
         return f"comment on column {entity_name}.{fname} is '{comment}';\n"
 
     @staticmethod
-    def get_cardinality(field_all: TableFieldType) -> tuple[str, str]:
-        """
-        Returns
-        - string with cardinality string (1, 1G, n or nG= Cardinality, G=Generatic-relation, r=reference, t=to, s=sql, R=required)
-        - string with error message or empty string if no error
-        """
-        error = ""
-        field = field_all.field_def
-        if field:
-            required = bool(field.get("required"))
-            sql = "sql" in field
-            to = bool(field.get("to"))
-            reference = bool(field.get("reference"))
-
-            # general rules of inconsistent field descriptions on field level
-            if reference and not to:  # temporaray rule to keep all to-attributes
-                error = "Field with reference temporarely needs also to-attribute\n"
-            elif field.get("sql") == "":
-                error = "sql attribute may not be empty\n"
-            elif required and sql:
-                error = "Field with attribute sql cannot be required\n"
-            elif not (to or reference):
-                error = "Relation field must have `to` or `reference` attribut set\n"
-            elif field["type"] == "generic-relation-list" and required:
-                error = "generic-relation-list cannot be required: not implemented\n"
-
-            if field["type"] == "relation":
-                result = "1"
-            elif field["type"] == "relation-list":
-                result = "n"
-            elif field["type"] == "generic-relation":
-                result = "1G"
-            elif field["type"] == "generic-relation-list":
-                result = "nG"
-            else:
-                raise Exception(
-                    f"Not implemented type {field['type']} in method get_cardinality found!"
-                )
-            if reference:
-                result += "r"
-            if (
-                to and not reference
-            ):  # to with reference only for temporaray backup compatibility in backend relation-handling
-                result += "t"
-            if required:
-                result += "R"
-            if sql:
-                result += "s"
-        else:
-            result = ""
-        return result, error
-
-    @staticmethod
-    def check_relation_definitions(
-        own_field: TableFieldType, foreign_fields: list[TableFieldType]
-    ) -> tuple[FieldSqlErrorType, bool, str, str]:
-        """
-        Decides for the own-field,
-          - whether it is a field, a sql-expression or is there an error
-          - relation-list and generic-relation-list are always sql-expressions.
-            True significates, that it is the pimary that creates the intermediate table
-
-        Also checks relational behaviour and produces the informative relation line and in
-        case of an error an error text
-
-        Returns:
-        - field, sql, error => enum FieldSqlErrorType
-        - primary field (only relevant for list fields)
-        - complete relational text with FIELD, SQL or *** in front
-        - error line if error else empty string
-        """
-        error = ""
-        own_c, tmp_error = Helper.get_cardinality(own_field)
-        error = error or tmp_error
-        foreigns_c = []
-        foreign_collectionfields = []
-        for foreign_field in foreign_fields:
-            foreign_c, tmp_error = Helper.get_cardinality(foreign_field)
-            foreigns_c.append(foreign_c)
-            error = error or tmp_error
-            foreign_collectionfields.append(foreign_field.collectionfield)
-
-        if error:
-            state = FieldSqlErrorType.ERROR
-            primary = False
-        else:
-            for i, foreign_field in enumerate(foreign_fields):
-                if i == 0:
-                    state, primary, error = Helper.generate_field_or_sql_decision(
-                        own_field, own_c, foreign_field, foreigns_c[i]
-                    )
-                else:
-                    statex, primaryx, error = Helper.generate_field_or_sql_decision(
-                        own_field, own_c, foreign_field, foreigns_c[i]
-                    )
-                    if not error and (statex != state or primaryx != primary):
-                        error = f"Error in generation for generic collectionfield '{own_field.collectionfield}'"
-                if error:
-                    state = FieldSqlErrorType.ERROR
-                    break
-
-        state_text = "***" if state == FieldSqlErrorType.ERROR else state.name
-        text = f"{state_text} {own_c}:{','.join(foreigns_c)} => {own_field.collectionfield}:-> {','.join(foreign_collectionfields)}\n"
-        if state == FieldSqlErrorType.ERROR:
-            text += f"    {error}"
-        return state, primary, text, error
-
-    @staticmethod
-    def generate_field_or_sql_decision(
-        own: TableFieldType, own_c: str, foreign: TableFieldType, foreign_c: str
-    ) -> tuple[FieldSqlErrorType, bool, str]:
-        """
-        Returns:
-        - field, sql, error for own => enum FieldSqlErrorType
-        - primary field for own: (only relevant for list fields)
-        - error line if error else empty string
-        """
-        decision_list: dict[
-            tuple[str, str], tuple[FieldSqlErrorType | None, bool | str | None]
-        ] = {
-            ("1Gr", ""): (FieldSqlErrorType.FIELD, False),
-            ("1GrR", ""): (FieldSqlErrorType.FIELD, False),
-            ("1r", ""): (FieldSqlErrorType.FIELD, False),
-            ("1rR", ""): (FieldSqlErrorType.FIELD, False),
-            ("1t", "1GrR"): (FieldSqlErrorType.SQL, False),
-            ("1t", "1r"): (FieldSqlErrorType.SQL, False),
-            ("1t", "1rR"): (FieldSqlErrorType.SQL, False),
-            ("1tR", "1Gr"): (FieldSqlErrorType.SQL, False),
-            ("1tR", "1GrR"): (FieldSqlErrorType.SQL, False),
-            ("nGt", "nt"): (FieldSqlErrorType.SQL, True),
-            ("nr", ""): (FieldSqlErrorType.SQL, True),
-            ("nt", "1Gr"): (FieldSqlErrorType.SQL, False),
-            ("nt", "1GrR"): (FieldSqlErrorType.SQL, False),
-            ("nt", "1r"): (FieldSqlErrorType.SQL, False),
-            ("nt", "1rR"): (FieldSqlErrorType.SQL, False),
-            ("nt", "nGt"): (FieldSqlErrorType.SQL, False),
-            ("nt", "nt"): (FieldSqlErrorType.SQL, "primary_decide_alphabetical"),
-            ("ntR", "1r"): (FieldSqlErrorType.SQL, False),
-            ("nts", "nts"): (FieldSqlErrorType.SQL, False),
-        }
-
-        state: FieldSqlErrorType | str | None
-        primary: bool | str | None
-        error = ""
-
-        state, primary = decision_list.get((own_c, foreign_c), (None, None))
-        if state is None:
-            error = f"Type combination not implemented: {own_c}:{foreign_c} on field {own.collectionfield}\n"
-            state = FieldSqlErrorType.ERROR
-        elif primary == "primary_decide_alphabetical":
-            primary = (
-                own.collectionfield == foreign.collectionfield
-                or foreign.collectionfield == "-"
-                or own.collectionfield < foreign.collectionfield
-            )
-        return cast(FieldSqlErrorType, state), cast(bool, primary), error
-
-    @staticmethod
     def get_generic_combined_fields(
         generic_plain_field_name: str, own_column: str, foreign_table: str
     ) -> str:
@@ -1154,39 +984,6 @@ class ModelsHelper:
             return to.split(KEYSEPARATOR)[0]
         else:
             raise Exception("Relation field without reference or to")
-
-    @staticmethod
-    def get_definitions_from_foreign_list(
-        table: str,
-        field: str,
-        to: ToDict | list[str] | None,
-        reference: list[str] | None,
-    ) -> list[TableFieldType]:
-        """
-        used for generic_relation with multiple foreign relations
-        """
-        # temporarely allowed
-        # if to and reference:
-        #     raise Exception(
-        #         f"Field {table}/{field}: On generic-relation fields it is not allowed to use 'to' and 'reference' for 1 field"
-        #     )
-        results: list[TableFieldType] = []
-        # precedence for reference
-        if reference:
-            for ref in reference:
-                results.append(TableFieldType.get_definitions_from_foreign(None, ref))
-        elif isinstance(to, dict):
-            fname = "/" + to["field"]
-            for table in to["collections"]:
-                results.append(
-                    TableFieldType.get_definitions_from_foreign(table + fname, None)
-                )
-        elif isinstance(to, list):
-            for collectionfield in to:
-                results.append(
-                    TableFieldType.get_definitions_from_foreign(collectionfield, None)
-                )
-        return results
 
 
 FIELD_TYPES: dict[str, dict[str, Any]] = {

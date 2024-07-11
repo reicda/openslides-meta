@@ -781,7 +781,7 @@ meeting:
   end_time:
     type: timestamp
     restriction_mode: B
-  locked-from_inside:
+  locked_from_inside:
     type: boolean
     restriction_mode: B
   imported_at:

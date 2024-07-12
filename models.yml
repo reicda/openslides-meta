@@ -142,6 +142,9 @@ organization:
     restriction_mode: A
     enum: *languages
     required: true
+  enable_duplicate_from_mandatory:
+    type: boolean
+    restriction_mode: A
 
   # Saml settings
   saml_enabled:

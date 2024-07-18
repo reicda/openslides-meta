@@ -575,7 +575,7 @@ class Helper:
         """
         -- schema_relational.sql for initial database setup OpenSlides
         -- Code generated. DO NOT EDIT.
-        CREATE EXTENSION hstore;  -- included in standard postgres-installations, check for alpine
+        CREATE EXTENSION hstore IF NOT EXISTS;  -- included in standard postgres-installations, check for alpine
 
         create or replace function check_not_null_for_relation_lists() returns trigger as $not_null_trigger$
         -- usage with 3 parameters IN TRIGGER DEFINITION:

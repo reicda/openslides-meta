@@ -408,7 +408,7 @@ meeting_user:
     restriction_mode: A
   locked_out:
     type: boolean
-    restriction_mode: A
+    restriction_mode: E
 
   user_id:
     type: relation

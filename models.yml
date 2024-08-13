@@ -179,7 +179,7 @@ organization:
     to: committee/organization_id
   active_meeting_ids:
     type: relation-list
-    restriction_mode: B
+    restriction_mode: A
     to: meeting/is_active_in_organization_id
   archived_meeting_ids:
     type: relation-list

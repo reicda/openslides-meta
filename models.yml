@@ -1949,6 +1949,7 @@ meeting:
   anonymous_group_id:
     type: relation
     to: group/anonymous_group_for_meeting_id
+    reference: group
     restriction_mode: B
 
 structure_level:

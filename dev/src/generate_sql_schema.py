@@ -9,9 +9,9 @@ from string import Formatter
 from textwrap import dedent
 from typing import Any, TypedDict, cast
 
-from .helper_get_names import (
+from helper_get_names import FieldSqlErrorType  # type: ignore
+from helper_get_names import (
     KEYSEPARATOR,
-    FieldSqlErrorType,
     HelperGetNames,
     InternalHelper,
     TableFieldType,

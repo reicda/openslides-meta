@@ -10,12 +10,8 @@ from textwrap import dedent
 from typing import Any, TypedDict, cast
 
 from helper_get_names import FieldSqlErrorType  # type: ignore
-from helper_get_names import (
-    KEYSEPARATOR,
-    HelperGetNames,
-    InternalHelper,
-    TableFieldType,
-)
+from helper_get_names import (KEYSEPARATOR, HelperGetNames, InternalHelper,
+                              TableFieldType)
 
 SOURCE = (Path(__file__).parent / ".." / ".." / "models.yml").resolve()
 DESTINATION = (Path(__file__).parent / ".." / "sql" / "schema_relational.sql").resolve()
@@ -575,9 +571,9 @@ class Helper:
         """
         -- schema_relational.sql for initial database setup OpenSlides
         -- Code generated. DO NOT EDIT.
-        CREATE EXTENSION hstore IF NOT EXISTS;  -- included in standard postgres-installations, check for alpine
+        CREATE EXTENSION hstore;  -- included in standard postgres-installations, check for alpine
 
-        create or replace function check_not_null_for_relation_lists() returns trigger as $not_null_trigger$
+        CREATE FUNCTION check_not_null_for_relation_lists() RETURNS trigger as $not_null_trigger$
         -- usage with 3 parameters IN TRIGGER DEFINITION:
         -- table_name of field to check, usually a field in a view
         -- column_name of field to check
@@ -617,7 +613,7 @@ class Helper:
         end;
         $not_null_trigger$ language plpgsql;
 
-        CREATE OR REPLACE FUNCTION truncate_tables(username IN VARCHAR) RETURNS void AS $$
+        CREATE FUNCTION truncate_tables(username IN VARCHAR) RETURNS void AS $$
         DECLARE
             statements CURSOR FOR
                 SELECT tablename FROM pg_tables
@@ -637,7 +633,7 @@ class Helper:
     INTERMEDIATE_TABLE_N_M_RELATION_TEMPLATE = string.Template(
         dedent(
             """
-            CREATE TABLE IF NOT EXISTS ${table_name} (
+            CREATE TABLE ${table_name} (
                 ${field1} integer NOT NULL REFERENCES ${table1} (id),
                 ${field2} integer NOT NULL REFERENCES ${table2} (id),
                 PRIMARY KEY (${list_of_keys})
@@ -648,7 +644,7 @@ class Helper:
     INTERMEDIATE_TABLE_G_M_RELATION_TEMPLATE = string.Template(
         dedent(
             """
-            CREATE TABLE IF NOT EXISTS ${table_name} (
+            CREATE TABLE ${table_name} (
                 id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
                 ${own_table_name_with_ref_column} integer NOT NULL REFERENCES ${own_table_name}(${own_table_ref_column}),
                 ${own_table_column} varchar(100) NOT NULL,
@@ -706,7 +702,7 @@ class Helper:
 
     @staticmethod
     def get_table_head(table_name: str) -> str:
-        return f"\nCREATE TABLE IF NOT EXISTS {HelperGetNames.get_table_name(table_name)} (\n"
+        return f"\nCREATE TABLE {HelperGetNames.get_table_name(table_name)} (\n"
 
     @staticmethod
     def get_table_body_end(code: str) -> str:
@@ -716,7 +712,7 @@ class Helper:
 
     @staticmethod
     def get_view_head(table_name: str) -> str:
-        return f"\nCREATE OR REPLACE VIEW {HelperGetNames.get_view_name(table_name)} AS SELECT *,\n"
+        return f"\nCREATE VIEW {HelperGetNames.get_view_name(table_name)} AS SELECT *,\n"
 
     @staticmethod
     def get_view_body_end(table_name: str, code: str) -> str:

@@ -10,8 +10,12 @@ from textwrap import dedent
 from typing import Any, TypedDict, cast
 
 from helper_get_names import FieldSqlErrorType  # type: ignore
-from helper_get_names import (KEYSEPARATOR, HelperGetNames, InternalHelper,
-                              TableFieldType)
+from helper_get_names import (
+    KEYSEPARATOR,
+    HelperGetNames,
+    InternalHelper,
+    TableFieldType,
+)
 
 SOURCE = (Path(__file__).parent / ".." / ".." / "models.yml").resolve()
 DESTINATION = (Path(__file__).parent / ".." / "sql" / "schema_relational.sql").resolve()
@@ -712,7 +716,9 @@ class Helper:
 
     @staticmethod
     def get_view_head(table_name: str) -> str:
-        return f"\nCREATE VIEW {HelperGetNames.get_view_name(table_name)} AS SELECT *,\n"
+        return (
+            f"\nCREATE VIEW {HelperGetNames.get_view_name(table_name)} AS SELECT *,\n"
+        )
 
     @staticmethod
     def get_view_body_end(table_name: str, code: str) -> str:

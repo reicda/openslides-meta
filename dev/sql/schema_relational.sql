@@ -42,19 +42,6 @@ begin
     RETURN NULL;  -- AFTER TRIGGER needs no return
 end;
 $not_null_trigger$ language plpgsql;
-
-CREATE FUNCTION truncate_tables(username IN VARCHAR) RETURNS void AS $$
-DECLARE
-    statements CURSOR FOR
-        SELECT tablename FROM pg_tables
-        WHERE tableowner = username AND schemaname = 'public';
-BEGIN
-    FOR stmt IN statements LOOP
-        EXECUTE 'TRUNCATE TABLE ' || quote_ident(stmt.tablename) || ' RESTART IDENTITY CASCADE;';
-    END LOOP;
-END;
-$$ LANGUAGE plpgsql;
-
 -- MODELS_YML_CHECKSUM = 'e3bcb2c45850469b5e56d3542d12ea15'
 -- Type definitions
 

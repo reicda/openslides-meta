@@ -616,19 +616,6 @@ class Helper:
             RETURN NULL;  -- AFTER TRIGGER needs no return
         end;
         $not_null_trigger$ language plpgsql;
-
-        CREATE FUNCTION truncate_tables(username IN VARCHAR) RETURNS void AS $$
-        DECLARE
-            statements CURSOR FOR
-                SELECT tablename FROM pg_tables
-                WHERE tableowner = username AND schemaname = 'public';
-        BEGIN
-            FOR stmt IN statements LOOP
-                EXECUTE 'TRUNCATE TABLE ' || quote_ident(stmt.tablename) || ' RESTART IDENTITY CASCADE;';
-            END LOOP;
-        END;
-        $$ LANGUAGE plpgsql;
-
         """
     )
     FIELD_TEMPLATE = string.Template(

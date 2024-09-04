@@ -1589,44 +1589,44 @@ FROM chat_group_t c;
 -- Alter table relations
 ALTER TABLE organization_t ADD FOREIGN KEY(theme_id) REFERENCES theme_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE meeting_user_t ADD FOREIGN KEY(user_id) REFERENCES user_t(id);
-ALTER TABLE meeting_user_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
-ALTER TABLE meeting_user_t ADD FOREIGN KEY(vote_delegated_to_id) REFERENCES meeting_user_t(id);
+ALTER TABLE meeting_user_t ADD FOREIGN KEY(user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
+ALTER TABLE meeting_user_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+ALTER TABLE meeting_user_t ADD FOREIGN KEY(vote_delegated_to_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE committee_t ADD FOREIGN KEY(default_meeting_id) REFERENCES meeting_t(id);
-ALTER TABLE committee_t ADD FOREIGN KEY(forwarding_user_id) REFERENCES user_t(id);
+ALTER TABLE committee_t ADD FOREIGN KEY(default_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+ALTER TABLE committee_t ADD FOREIGN KEY(forwarding_user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE meeting_t ADD FOREIGN KEY(is_active_in_organization_id) REFERENCES organization_t(id);
-ALTER TABLE meeting_t ADD FOREIGN KEY(is_archived_in_organization_id) REFERENCES organization_t(id);
-ALTER TABLE meeting_t ADD FOREIGN KEY(template_for_organization_id) REFERENCES organization_t(id);
+ALTER TABLE meeting_t ADD FOREIGN KEY(is_active_in_organization_id) REFERENCES organization_t(id) INITIALLY DEFERRED;
+ALTER TABLE meeting_t ADD FOREIGN KEY(is_archived_in_organization_id) REFERENCES organization_t(id) INITIALLY DEFERRED;
+ALTER TABLE meeting_t ADD FOREIGN KEY(template_for_organization_id) REFERENCES organization_t(id) INITIALLY DEFERRED;
 ALTER TABLE meeting_t ADD FOREIGN KEY(motions_default_workflow_id) REFERENCES motion_workflow_t(id) INITIALLY DEFERRED;
 ALTER TABLE meeting_t ADD FOREIGN KEY(motions_default_amendment_workflow_id) REFERENCES motion_workflow_t(id) INITIALLY DEFERRED;
 ALTER TABLE meeting_t ADD FOREIGN KEY(motions_default_statute_amendment_workflow_id) REFERENCES motion_workflow_t(id) INITIALLY DEFERRED;
-ALTER TABLE meeting_t ADD FOREIGN KEY(logo_projector_main_id) REFERENCES mediafile_t(id);
-ALTER TABLE meeting_t ADD FOREIGN KEY(logo_projector_header_id) REFERENCES mediafile_t(id);
-ALTER TABLE meeting_t ADD FOREIGN KEY(logo_web_header_id) REFERENCES mediafile_t(id);
-ALTER TABLE meeting_t ADD FOREIGN KEY(logo_pdf_header_l_id) REFERENCES mediafile_t(id);
-ALTER TABLE meeting_t ADD FOREIGN KEY(logo_pdf_header_r_id) REFERENCES mediafile_t(id);
-ALTER TABLE meeting_t ADD FOREIGN KEY(logo_pdf_footer_l_id) REFERENCES mediafile_t(id);
-ALTER TABLE meeting_t ADD FOREIGN KEY(logo_pdf_footer_r_id) REFERENCES mediafile_t(id);
-ALTER TABLE meeting_t ADD FOREIGN KEY(logo_pdf_ballot_paper_id) REFERENCES mediafile_t(id);
-ALTER TABLE meeting_t ADD FOREIGN KEY(font_regular_id) REFERENCES mediafile_t(id);
-ALTER TABLE meeting_t ADD FOREIGN KEY(font_italic_id) REFERENCES mediafile_t(id);
-ALTER TABLE meeting_t ADD FOREIGN KEY(font_bold_id) REFERENCES mediafile_t(id);
-ALTER TABLE meeting_t ADD FOREIGN KEY(font_bold_italic_id) REFERENCES mediafile_t(id);
-ALTER TABLE meeting_t ADD FOREIGN KEY(font_monospace_id) REFERENCES mediafile_t(id);
-ALTER TABLE meeting_t ADD FOREIGN KEY(font_chyron_speaker_name_id) REFERENCES mediafile_t(id);
-ALTER TABLE meeting_t ADD FOREIGN KEY(font_projector_h1_id) REFERENCES mediafile_t(id);
-ALTER TABLE meeting_t ADD FOREIGN KEY(font_projector_h2_id) REFERENCES mediafile_t(id);
-ALTER TABLE meeting_t ADD FOREIGN KEY(committee_id) REFERENCES committee_t(id);
+ALTER TABLE meeting_t ADD FOREIGN KEY(logo_projector_main_id) REFERENCES mediafile_t(id) INITIALLY DEFERRED;
+ALTER TABLE meeting_t ADD FOREIGN KEY(logo_projector_header_id) REFERENCES mediafile_t(id) INITIALLY DEFERRED;
+ALTER TABLE meeting_t ADD FOREIGN KEY(logo_web_header_id) REFERENCES mediafile_t(id) INITIALLY DEFERRED;
+ALTER TABLE meeting_t ADD FOREIGN KEY(logo_pdf_header_l_id) REFERENCES mediafile_t(id) INITIALLY DEFERRED;
+ALTER TABLE meeting_t ADD FOREIGN KEY(logo_pdf_header_r_id) REFERENCES mediafile_t(id) INITIALLY DEFERRED;
+ALTER TABLE meeting_t ADD FOREIGN KEY(logo_pdf_footer_l_id) REFERENCES mediafile_t(id) INITIALLY DEFERRED;
+ALTER TABLE meeting_t ADD FOREIGN KEY(logo_pdf_footer_r_id) REFERENCES mediafile_t(id) INITIALLY DEFERRED;
+ALTER TABLE meeting_t ADD FOREIGN KEY(logo_pdf_ballot_paper_id) REFERENCES mediafile_t(id) INITIALLY DEFERRED;
+ALTER TABLE meeting_t ADD FOREIGN KEY(font_regular_id) REFERENCES mediafile_t(id) INITIALLY DEFERRED;
+ALTER TABLE meeting_t ADD FOREIGN KEY(font_italic_id) REFERENCES mediafile_t(id) INITIALLY DEFERRED;
+ALTER TABLE meeting_t ADD FOREIGN KEY(font_bold_id) REFERENCES mediafile_t(id) INITIALLY DEFERRED;
+ALTER TABLE meeting_t ADD FOREIGN KEY(font_bold_italic_id) REFERENCES mediafile_t(id) INITIALLY DEFERRED;
+ALTER TABLE meeting_t ADD FOREIGN KEY(font_monospace_id) REFERENCES mediafile_t(id) INITIALLY DEFERRED;
+ALTER TABLE meeting_t ADD FOREIGN KEY(font_chyron_speaker_name_id) REFERENCES mediafile_t(id) INITIALLY DEFERRED;
+ALTER TABLE meeting_t ADD FOREIGN KEY(font_projector_h1_id) REFERENCES mediafile_t(id) INITIALLY DEFERRED;
+ALTER TABLE meeting_t ADD FOREIGN KEY(font_projector_h2_id) REFERENCES mediafile_t(id) INITIALLY DEFERRED;
+ALTER TABLE meeting_t ADD FOREIGN KEY(committee_id) REFERENCES committee_t(id) INITIALLY DEFERRED;
 ALTER TABLE meeting_t ADD FOREIGN KEY(reference_projector_id) REFERENCES projector_t(id) INITIALLY DEFERRED;
-ALTER TABLE meeting_t ADD FOREIGN KEY(list_of_speakers_countdown_id) REFERENCES projector_countdown_t(id);
-ALTER TABLE meeting_t ADD FOREIGN KEY(poll_countdown_id) REFERENCES projector_countdown_t(id);
+ALTER TABLE meeting_t ADD FOREIGN KEY(list_of_speakers_countdown_id) REFERENCES projector_countdown_t(id) INITIALLY DEFERRED;
+ALTER TABLE meeting_t ADD FOREIGN KEY(poll_countdown_id) REFERENCES projector_countdown_t(id) INITIALLY DEFERRED;
 ALTER TABLE meeting_t ADD FOREIGN KEY(default_group_id) REFERENCES group_t(id) INITIALLY DEFERRED;
 ALTER TABLE meeting_t ADD FOREIGN KEY(admin_group_id) REFERENCES group_t(id) INITIALLY DEFERRED;
 ALTER TABLE meeting_t ADD FOREIGN KEY(anonymous_group_id) REFERENCES group_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE structure_level_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE structure_level_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
 ALTER TABLE group_t ADD FOREIGN KEY(used_as_motion_poll_default_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 ALTER TABLE group_t ADD FOREIGN KEY(used_as_assignment_poll_default_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
@@ -1634,118 +1634,118 @@ ALTER TABLE group_t ADD FOREIGN KEY(used_as_topic_poll_default_id) REFERENCES me
 ALTER TABLE group_t ADD FOREIGN KEY(used_as_poll_default_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 ALTER TABLE group_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE personal_note_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id);
-ALTER TABLE personal_note_t ADD FOREIGN KEY(content_object_id_motion_id) REFERENCES motion_t(id);
-ALTER TABLE personal_note_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE personal_note_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+ALTER TABLE personal_note_t ADD FOREIGN KEY(content_object_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+ALTER TABLE personal_note_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE tag_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE tag_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE agenda_item_t ADD FOREIGN KEY(content_object_id_motion_id) REFERENCES motion_t(id);
-ALTER TABLE agenda_item_t ADD FOREIGN KEY(content_object_id_motion_block_id) REFERENCES motion_block_t(id);
-ALTER TABLE agenda_item_t ADD FOREIGN KEY(content_object_id_assignment_id) REFERENCES assignment_t(id);
-ALTER TABLE agenda_item_t ADD FOREIGN KEY(content_object_id_topic_id) REFERENCES topic_t(id);
-ALTER TABLE agenda_item_t ADD FOREIGN KEY(parent_id) REFERENCES agenda_item_t(id);
-ALTER TABLE agenda_item_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE agenda_item_t ADD FOREIGN KEY(content_object_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+ALTER TABLE agenda_item_t ADD FOREIGN KEY(content_object_id_motion_block_id) REFERENCES motion_block_t(id) INITIALLY DEFERRED;
+ALTER TABLE agenda_item_t ADD FOREIGN KEY(content_object_id_assignment_id) REFERENCES assignment_t(id) INITIALLY DEFERRED;
+ALTER TABLE agenda_item_t ADD FOREIGN KEY(content_object_id_topic_id) REFERENCES topic_t(id) INITIALLY DEFERRED;
+ALTER TABLE agenda_item_t ADD FOREIGN KEY(parent_id) REFERENCES agenda_item_t(id) INITIALLY DEFERRED;
+ALTER TABLE agenda_item_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE list_of_speakers_t ADD FOREIGN KEY(content_object_id_motion_id) REFERENCES motion_t(id);
-ALTER TABLE list_of_speakers_t ADD FOREIGN KEY(content_object_id_motion_block_id) REFERENCES motion_block_t(id);
-ALTER TABLE list_of_speakers_t ADD FOREIGN KEY(content_object_id_assignment_id) REFERENCES assignment_t(id);
-ALTER TABLE list_of_speakers_t ADD FOREIGN KEY(content_object_id_topic_id) REFERENCES topic_t(id);
-ALTER TABLE list_of_speakers_t ADD FOREIGN KEY(content_object_id_mediafile_id) REFERENCES mediafile_t(id);
-ALTER TABLE list_of_speakers_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE list_of_speakers_t ADD FOREIGN KEY(content_object_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+ALTER TABLE list_of_speakers_t ADD FOREIGN KEY(content_object_id_motion_block_id) REFERENCES motion_block_t(id) INITIALLY DEFERRED;
+ALTER TABLE list_of_speakers_t ADD FOREIGN KEY(content_object_id_assignment_id) REFERENCES assignment_t(id) INITIALLY DEFERRED;
+ALTER TABLE list_of_speakers_t ADD FOREIGN KEY(content_object_id_topic_id) REFERENCES topic_t(id) INITIALLY DEFERRED;
+ALTER TABLE list_of_speakers_t ADD FOREIGN KEY(content_object_id_mediafile_id) REFERENCES mediafile_t(id) INITIALLY DEFERRED;
+ALTER TABLE list_of_speakers_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE structure_level_list_of_speakers_t ADD FOREIGN KEY(structure_level_id) REFERENCES structure_level_t(id);
-ALTER TABLE structure_level_list_of_speakers_t ADD FOREIGN KEY(list_of_speakers_id) REFERENCES list_of_speakers_t(id);
-ALTER TABLE structure_level_list_of_speakers_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE structure_level_list_of_speakers_t ADD FOREIGN KEY(structure_level_id) REFERENCES structure_level_t(id) INITIALLY DEFERRED;
+ALTER TABLE structure_level_list_of_speakers_t ADD FOREIGN KEY(list_of_speakers_id) REFERENCES list_of_speakers_t(id) INITIALLY DEFERRED;
+ALTER TABLE structure_level_list_of_speakers_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE point_of_order_category_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE point_of_order_category_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE speaker_t ADD FOREIGN KEY(list_of_speakers_id) REFERENCES list_of_speakers_t(id);
-ALTER TABLE speaker_t ADD FOREIGN KEY(structure_level_list_of_speakers_id) REFERENCES structure_level_list_of_speakers_t(id);
-ALTER TABLE speaker_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id);
-ALTER TABLE speaker_t ADD FOREIGN KEY(point_of_order_category_id) REFERENCES point_of_order_category_t(id);
-ALTER TABLE speaker_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE speaker_t ADD FOREIGN KEY(list_of_speakers_id) REFERENCES list_of_speakers_t(id) INITIALLY DEFERRED;
+ALTER TABLE speaker_t ADD FOREIGN KEY(structure_level_list_of_speakers_id) REFERENCES structure_level_list_of_speakers_t(id) INITIALLY DEFERRED;
+ALTER TABLE speaker_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+ALTER TABLE speaker_t ADD FOREIGN KEY(point_of_order_category_id) REFERENCES point_of_order_category_t(id) INITIALLY DEFERRED;
+ALTER TABLE speaker_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE topic_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE topic_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE motion_t ADD FOREIGN KEY(lead_motion_id) REFERENCES motion_t(id);
-ALTER TABLE motion_t ADD FOREIGN KEY(sort_parent_id) REFERENCES motion_t(id);
-ALTER TABLE motion_t ADD FOREIGN KEY(origin_id) REFERENCES motion_t(id);
-ALTER TABLE motion_t ADD FOREIGN KEY(origin_meeting_id) REFERENCES meeting_t(id);
-ALTER TABLE motion_t ADD FOREIGN KEY(state_id) REFERENCES motion_state_t(id);
-ALTER TABLE motion_t ADD FOREIGN KEY(recommendation_id) REFERENCES motion_state_t(id);
-ALTER TABLE motion_t ADD FOREIGN KEY(category_id) REFERENCES motion_category_t(id);
-ALTER TABLE motion_t ADD FOREIGN KEY(block_id) REFERENCES motion_block_t(id);
-ALTER TABLE motion_t ADD FOREIGN KEY(statute_paragraph_id) REFERENCES motion_statute_paragraph_t(id);
-ALTER TABLE motion_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE motion_t ADD FOREIGN KEY(lead_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+ALTER TABLE motion_t ADD FOREIGN KEY(sort_parent_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+ALTER TABLE motion_t ADD FOREIGN KEY(origin_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+ALTER TABLE motion_t ADD FOREIGN KEY(origin_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+ALTER TABLE motion_t ADD FOREIGN KEY(state_id) REFERENCES motion_state_t(id) INITIALLY DEFERRED;
+ALTER TABLE motion_t ADD FOREIGN KEY(recommendation_id) REFERENCES motion_state_t(id) INITIALLY DEFERRED;
+ALTER TABLE motion_t ADD FOREIGN KEY(category_id) REFERENCES motion_category_t(id) INITIALLY DEFERRED;
+ALTER TABLE motion_t ADD FOREIGN KEY(block_id) REFERENCES motion_block_t(id) INITIALLY DEFERRED;
+ALTER TABLE motion_t ADD FOREIGN KEY(statute_paragraph_id) REFERENCES motion_statute_paragraph_t(id) INITIALLY DEFERRED;
+ALTER TABLE motion_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE motion_submitter_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id);
-ALTER TABLE motion_submitter_t ADD FOREIGN KEY(motion_id) REFERENCES motion_t(id);
-ALTER TABLE motion_submitter_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE motion_submitter_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+ALTER TABLE motion_submitter_t ADD FOREIGN KEY(motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+ALTER TABLE motion_submitter_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE motion_editor_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id);
-ALTER TABLE motion_editor_t ADD FOREIGN KEY(motion_id) REFERENCES motion_t(id);
-ALTER TABLE motion_editor_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE motion_editor_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+ALTER TABLE motion_editor_t ADD FOREIGN KEY(motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+ALTER TABLE motion_editor_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE motion_working_group_speaker_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id);
-ALTER TABLE motion_working_group_speaker_t ADD FOREIGN KEY(motion_id) REFERENCES motion_t(id);
-ALTER TABLE motion_working_group_speaker_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE motion_working_group_speaker_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+ALTER TABLE motion_working_group_speaker_t ADD FOREIGN KEY(motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+ALTER TABLE motion_working_group_speaker_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE motion_comment_t ADD FOREIGN KEY(motion_id) REFERENCES motion_t(id);
-ALTER TABLE motion_comment_t ADD FOREIGN KEY(section_id) REFERENCES motion_comment_section_t(id);
-ALTER TABLE motion_comment_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE motion_comment_t ADD FOREIGN KEY(motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+ALTER TABLE motion_comment_t ADD FOREIGN KEY(section_id) REFERENCES motion_comment_section_t(id) INITIALLY DEFERRED;
+ALTER TABLE motion_comment_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE motion_comment_section_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE motion_comment_section_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE motion_category_t ADD FOREIGN KEY(parent_id) REFERENCES motion_category_t(id);
-ALTER TABLE motion_category_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE motion_category_t ADD FOREIGN KEY(parent_id) REFERENCES motion_category_t(id) INITIALLY DEFERRED;
+ALTER TABLE motion_category_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE motion_block_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE motion_block_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE motion_change_recommendation_t ADD FOREIGN KEY(motion_id) REFERENCES motion_t(id);
-ALTER TABLE motion_change_recommendation_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE motion_change_recommendation_t ADD FOREIGN KEY(motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+ALTER TABLE motion_change_recommendation_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE motion_state_t ADD FOREIGN KEY(submitter_withdraw_state_id) REFERENCES motion_state_t(id);
+ALTER TABLE motion_state_t ADD FOREIGN KEY(submitter_withdraw_state_id) REFERENCES motion_state_t(id) INITIALLY DEFERRED;
 ALTER TABLE motion_state_t ADD FOREIGN KEY(workflow_id) REFERENCES motion_workflow_t(id) INITIALLY DEFERRED;
 ALTER TABLE motion_state_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
 ALTER TABLE motion_workflow_t ADD FOREIGN KEY(first_state_id) REFERENCES motion_state_t(id) INITIALLY DEFERRED;
 ALTER TABLE motion_workflow_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE motion_statute_paragraph_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE motion_statute_paragraph_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE poll_t ADD FOREIGN KEY(content_object_id_motion_id) REFERENCES motion_t(id);
-ALTER TABLE poll_t ADD FOREIGN KEY(content_object_id_assignment_id) REFERENCES assignment_t(id);
-ALTER TABLE poll_t ADD FOREIGN KEY(content_object_id_topic_id) REFERENCES topic_t(id);
-ALTER TABLE poll_t ADD FOREIGN KEY(global_option_id) REFERENCES option_t(id);
-ALTER TABLE poll_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE poll_t ADD FOREIGN KEY(content_object_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+ALTER TABLE poll_t ADD FOREIGN KEY(content_object_id_assignment_id) REFERENCES assignment_t(id) INITIALLY DEFERRED;
+ALTER TABLE poll_t ADD FOREIGN KEY(content_object_id_topic_id) REFERENCES topic_t(id) INITIALLY DEFERRED;
+ALTER TABLE poll_t ADD FOREIGN KEY(global_option_id) REFERENCES option_t(id) INITIALLY DEFERRED;
+ALTER TABLE poll_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE option_t ADD FOREIGN KEY(poll_id) REFERENCES poll_t(id);
-ALTER TABLE option_t ADD FOREIGN KEY(content_object_id_motion_id) REFERENCES motion_t(id);
-ALTER TABLE option_t ADD FOREIGN KEY(content_object_id_user_id) REFERENCES user_t(id);
-ALTER TABLE option_t ADD FOREIGN KEY(content_object_id_poll_candidate_list_id) REFERENCES poll_candidate_list_t(id);
-ALTER TABLE option_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE option_t ADD FOREIGN KEY(poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
+ALTER TABLE option_t ADD FOREIGN KEY(content_object_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+ALTER TABLE option_t ADD FOREIGN KEY(content_object_id_user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
+ALTER TABLE option_t ADD FOREIGN KEY(content_object_id_poll_candidate_list_id) REFERENCES poll_candidate_list_t(id) INITIALLY DEFERRED;
+ALTER TABLE option_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE vote_t ADD FOREIGN KEY(option_id) REFERENCES option_t(id);
-ALTER TABLE vote_t ADD FOREIGN KEY(user_id) REFERENCES user_t(id);
-ALTER TABLE vote_t ADD FOREIGN KEY(delegated_user_id) REFERENCES user_t(id);
-ALTER TABLE vote_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE vote_t ADD FOREIGN KEY(option_id) REFERENCES option_t(id) INITIALLY DEFERRED;
+ALTER TABLE vote_t ADD FOREIGN KEY(user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
+ALTER TABLE vote_t ADD FOREIGN KEY(delegated_user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
+ALTER TABLE vote_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE assignment_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE assignment_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE assignment_candidate_t ADD FOREIGN KEY(assignment_id) REFERENCES assignment_t(id);
-ALTER TABLE assignment_candidate_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id);
-ALTER TABLE assignment_candidate_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE assignment_candidate_t ADD FOREIGN KEY(assignment_id) REFERENCES assignment_t(id) INITIALLY DEFERRED;
+ALTER TABLE assignment_candidate_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+ALTER TABLE assignment_candidate_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE poll_candidate_list_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE poll_candidate_list_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE poll_candidate_t ADD FOREIGN KEY(poll_candidate_list_id) REFERENCES poll_candidate_list_t(id);
-ALTER TABLE poll_candidate_t ADD FOREIGN KEY(user_id) REFERENCES user_t(id);
-ALTER TABLE poll_candidate_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE poll_candidate_t ADD FOREIGN KEY(poll_candidate_list_id) REFERENCES poll_candidate_list_t(id) INITIALLY DEFERRED;
+ALTER TABLE poll_candidate_t ADD FOREIGN KEY(user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
+ALTER TABLE poll_candidate_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE mediafile_t ADD FOREIGN KEY(parent_id) REFERENCES mediafile_t(id);
-ALTER TABLE mediafile_t ADD FOREIGN KEY(owner_id_meeting_id) REFERENCES meeting_t(id);
-ALTER TABLE mediafile_t ADD FOREIGN KEY(owner_id_organization_id) REFERENCES organization_t(id);
+ALTER TABLE mediafile_t ADD FOREIGN KEY(parent_id) REFERENCES mediafile_t(id) INITIALLY DEFERRED;
+ALTER TABLE mediafile_t ADD FOREIGN KEY(owner_id_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+ALTER TABLE mediafile_t ADD FOREIGN KEY(owner_id_organization_id) REFERENCES organization_t(id) INITIALLY DEFERRED;
 
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_agenda_item_list_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_topic_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
@@ -1763,31 +1763,31 @@ ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_motion_pol
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_poll_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 ALTER TABLE projector_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE projection_t ADD FOREIGN KEY(current_projector_id) REFERENCES projector_t(id);
-ALTER TABLE projection_t ADD FOREIGN KEY(preview_projector_id) REFERENCES projector_t(id);
-ALTER TABLE projection_t ADD FOREIGN KEY(history_projector_id) REFERENCES projector_t(id);
-ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_meeting_id) REFERENCES meeting_t(id);
-ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_motion_id) REFERENCES motion_t(id);
-ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_mediafile_id) REFERENCES mediafile_t(id);
-ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_list_of_speakers_id) REFERENCES list_of_speakers_t(id);
-ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_motion_block_id) REFERENCES motion_block_t(id);
-ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_assignment_id) REFERENCES assignment_t(id);
-ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_agenda_item_id) REFERENCES agenda_item_t(id);
-ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_topic_id) REFERENCES topic_t(id);
-ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_poll_id) REFERENCES poll_t(id);
-ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_projector_message_id) REFERENCES projector_message_t(id);
-ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_projector_countdown_id) REFERENCES projector_countdown_t(id);
-ALTER TABLE projection_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE projection_t ADD FOREIGN KEY(current_projector_id) REFERENCES projector_t(id) INITIALLY DEFERRED;
+ALTER TABLE projection_t ADD FOREIGN KEY(preview_projector_id) REFERENCES projector_t(id) INITIALLY DEFERRED;
+ALTER TABLE projection_t ADD FOREIGN KEY(history_projector_id) REFERENCES projector_t(id) INITIALLY DEFERRED;
+ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_mediafile_id) REFERENCES mediafile_t(id) INITIALLY DEFERRED;
+ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_list_of_speakers_id) REFERENCES list_of_speakers_t(id) INITIALLY DEFERRED;
+ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_motion_block_id) REFERENCES motion_block_t(id) INITIALLY DEFERRED;
+ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_assignment_id) REFERENCES assignment_t(id) INITIALLY DEFERRED;
+ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_agenda_item_id) REFERENCES agenda_item_t(id) INITIALLY DEFERRED;
+ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_topic_id) REFERENCES topic_t(id) INITIALLY DEFERRED;
+ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
+ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_projector_message_id) REFERENCES projector_message_t(id) INITIALLY DEFERRED;
+ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_projector_countdown_id) REFERENCES projector_countdown_t(id) INITIALLY DEFERRED;
+ALTER TABLE projection_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE projector_message_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE projector_message_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE projector_countdown_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE projector_countdown_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE chat_group_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE chat_group_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
-ALTER TABLE chat_message_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id);
-ALTER TABLE chat_message_t ADD FOREIGN KEY(chat_group_id) REFERENCES chat_group_t(id);
-ALTER TABLE chat_message_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id);
+ALTER TABLE chat_message_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+ALTER TABLE chat_message_t ADD FOREIGN KEY(chat_group_id) REFERENCES chat_group_t(id) INITIALLY DEFERRED;
+ALTER TABLE chat_message_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 
 -- Create trigger
 

@@ -954,10 +954,11 @@ class ModelsHelper:
                     if ftable == t2:
                         return True
             return False
-
-        if _first_to_second(own_table, foreign_table):
-            return _first_to_second(foreign_table, own_table)
-        return False
+        return True
+        # TODO: Will be reverted in a future issue
+        # if _first_to_second(own_table, foreign_table):
+        #     return _first_to_second(foreign_table, own_table)
+        # return False
 
     @staticmethod
     def get_foreign_table_from_to_or_reference(

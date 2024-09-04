@@ -954,6 +954,7 @@ class ModelsHelper:
                     if ftable == t2:
                         return True
             return False
+
         return True
         # TODO: Will be reverted in a future issue
         # if _first_to_second(own_table, foreign_table):
